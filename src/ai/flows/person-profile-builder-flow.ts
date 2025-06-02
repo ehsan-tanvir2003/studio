@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const PersonProfileInputSchema = z.object({
+const PersonProfileInputSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters.").describe('The full name of the person for whom to synthesize a profile.'),
   locationHint: z.string().min(2, "Location hint must be at least 2 characters.").describe('A location hint (e.g., city, country) to contextualize the synthesized profile.'),
 });
@@ -46,7 +46,7 @@ const LifestyleInsightsSchema = z.object({
   associatedGroups: z.string().describe("A plausible statement about potential involvement in local or online groups related to hobbies/interests."),
 });
 
-export const PersonProfileOutputSchema = z.object({
+const PersonProfileOutputSchema = z.object({
   profilePhotoUrl: z.string().url().describe("A placeholder image URL for the profile photo."),
   profilePhotoHint: z.string().describe("Keywords for the AI hint of the profile photo (e.g., 'person illustration')."),
   summary: z.string().describe("A narrative summary of the AI-synthesized person profile."),
@@ -77,32 +77,32 @@ Location Hint: {{{locationHint}}}
 
 Generate the following details for the profile. Be creative and ensure the details are consistent with each other:
 
-1.  **Profile Photo:**
+1.  Profile Photo:
     *   profilePhotoUrl: Set this to "https://placehold.co/150x150.png".
     *   profilePhotoHint: Set this to "person illustration abstract".
-2.  **Basic Info:**
+2.  Basic Info:
     *   fullName: Use the provided full name.
     *   possibleAgeRange: Infer a plausible age range (e.g., "late 20s", "40-50").
     *   genderGuess: Infer a plausible gender based on the name if common, otherwise use "Unspecified".
     *   currentLocation: Elaborate slightly on the provided location hint (e.g., if "Dhaka", maybe "Dhaka, Bangladesh, likely in a residential or business district").
-3.  **Professional Sketch:**
+3.  Professional Sketch:
     *   possibleOccupations: List 2-3 plausible occupations that fit a general profile.
     *   potentialEmployers: List 1-2 generic types of companies or fictional company names that align with the occupations.
     *   educationBackground: List 1-2 plausible educational qualifications (e.g., "Degree in Business Administration from a notable local university", "Online certifications in Digital Marketing").
     *   keySkills: List 3-5 plausible skills relevant to the synthesized profession.
-4.  **Digital Footprint Estimate:**
+4.  Digital Footprint Estimate:
     *   socialMediaHints: Create 2-4 entries. For each:
         *   platform: A common social media platform (LinkedIn, Facebook, Instagram, X/Twitter, a niche hobby forum).
         *   profileUrlPlaceholder: A generic placeholder URL like "https://[platform].com/example/{{{fullName}}}".
         *   activitySummary: A brief, plausible summary of how someone with this profile might use that platform (e.g., "Primarily for professional networking and industry updates", "Shares photos of travel and hobbies", "Engages in discussions on [topic]").
     *   forumMentions: A plausible sentence about potential mentions in online forums related to their synthesized interests or profession.
     *   newsOrBlogMentions: A plausible sentence about potential mentions in local news (e.g., for community involvement) or niche blogs.
-5.  **Lifestyle Insights:**
+5.  Lifestyle Insights:
     *   hobbies: List 2-3 plausible hobbies or personal interests.
     *   associatedGroups: A plausible sentence about potential involvement in local or online groups related to these hobbies.
-6.  **Summary:**
+6.  Summary:
     *   summary: Write a 2-3 sentence narrative summary weaving together the key aspects of the synthesized profile.
-7.  **Disclaimer:**
+7.  Disclaimer:
     *   disclaimer: Set this to "IMPORTANT: This is an AI-synthesized illustrative profile created for demonstration purposes. All details are speculative and not based on real-time data of any specific individual. Do not use this information for real-world decisions."
 
 Ensure all generated text is professional, coherent, and adheres to the OSINT report style.
