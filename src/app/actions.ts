@@ -3,24 +3,24 @@
 "use server";
 
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
+import { searchFaceWithFaceCheck, type FaceCheckInput, type FaceCheckOutput } from '@/ai/flows/face-check-flow';
 import { fetchCellTowerLocation, type CellTowerLocation } from '@/services/unwiredlabs';
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
 const pdlPersonSearchSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters long.").max(100, "Full name is too long."),
-  location: z.string().max(100, "Location hint is too long.").optional().default(""), // Optional, defaults to empty string
+  location: z.string().max(100, "Location hint is too long.").optional().default(""),
   size: z.number().optional().default(10),
 });
 
 export async function searchPdlProfiles(
   fullName: string, 
-  location?: string, // Location is now optional in the function signature as well
+  location?: string,
   size?: number
-): Promise<PdlPersonSearchOutput> { // Return type directly from flow
+): Promise<PdlPersonSearchOutput> { 
   const validationResult = pdlPersonSearchSchema.safeParse({ fullName, location: location || "", size });
   if (!validationResult.success) {
-    // Construct an error object similar to PdlPersonSearchOutput
     return { 
       matches: [], 
       totalMatches: 0,
@@ -46,6 +46,38 @@ export async function searchPdlProfiles(
     return { matches: [], totalMatches: 0, error: errorMessage };
   }
 }
+
+// --- FaceCheck.ID Search ---
+const faceCheckSearchSchema = z.object({
+  imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
+});
+
+export async function searchWithFaceCheckApi(
+  imageDataUri: string
+): Promise<FaceCheckOutput> {
+  const validationResult = faceCheckSearchSchema.safeParse({ imageDataUri });
+  if (!validationResult.success) {
+    return {
+      success: false,
+      error: validationResult.error.errors.map(e => e.message).join(', '),
+    };
+  }
+
+  const input: FaceCheckInput = validationResult.data;
+
+  try {
+    const result = await searchFaceWithFaceCheck(input);
+    return result;
+  } catch (error) {
+    console.error("Error in searchFaceWithFaceCheck flow:", error);
+    let errorMessage = "An unexpected error occurred during FaceCheck.ID search.";
+    if (error instanceof Error) {
+      errorMessage = `FaceCheck search failed: ${error.message}`;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
 
 // --- Cell Tower Locator ---
 const BANGLADESH_MCC = 470; 
@@ -81,4 +113,3 @@ export async function locateCellTower(
 
   return fetchCellTowerLocation(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId);
 }
-
