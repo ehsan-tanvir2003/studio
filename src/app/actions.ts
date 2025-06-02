@@ -9,7 +9,7 @@ import * as z from 'zod';
 // --- PeopleDataLabs Person Search ---
 const pdlPersonSearchSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters long.").max(100, "Full name is too long."),
-  location: z.string().optional().default("").max(100, "Location hint is too long."), // Optional, defaults to empty string
+  location: z.string().max(100, "Location hint is too long.").optional().default(""), // Optional, defaults to empty string
   size: z.number().optional().default(10),
 });
 
