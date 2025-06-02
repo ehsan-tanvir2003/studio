@@ -9,16 +9,16 @@ import * as z from 'zod';
 // --- PeopleDataLabs Person Search ---
 const pdlPersonSearchSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters long.").max(100, "Full name is too long."),
-  location: z.string().min(2, "Location must be at least 2 characters long.").max(100, "Location hint is too long."),
+  location: z.string().optional().default("").max(100, "Location hint is too long."), // Optional, defaults to empty string
   size: z.number().optional().default(10),
 });
 
 export async function searchPdlProfiles(
   fullName: string, 
-  location: string,
+  location?: string, // Location is now optional in the function signature as well
   size?: number
 ): Promise<PdlPersonSearchOutput> { // Return type directly from flow
-  const validationResult = pdlPersonSearchSchema.safeParse({ fullName, location, size });
+  const validationResult = pdlPersonSearchSchema.safeParse({ fullName, location: location || "", size });
   if (!validationResult.success) {
     // Construct an error object similar to PdlPersonSearchOutput
     return { 
@@ -81,3 +81,4 @@ export async function locateCellTower(
 
   return fetchCellTowerLocation(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId);
 }
+

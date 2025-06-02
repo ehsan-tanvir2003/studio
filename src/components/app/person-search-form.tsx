@@ -14,8 +14,11 @@ const formSchema = z.object({
     .min(3, "Full name must be at least 3 characters.")
     .max(100, "Full name seems too long."),
   location: z.string() 
-    .min(2, "Location must be at least 2 characters.")
-    .max(100, "Location seems too long."),
+    .optional() // Location is now optional
+    .default("") // Default to empty string if not provided
+    .refine(val => val === "" || (val.length >= 2 && val.length <= 100), { // Validate only if not empty
+      message: "Location must be between 2 and 100 characters if provided."
+    }),
 });
 
 type PdlSearchFormValues = z.infer<typeof formSchema>;
@@ -41,9 +44,9 @@ export default function PersonSearchForm({
   fullNameLabel = "Target Full Name",
   fullNamePlaceholder = "[Enter Full Name to Search PDL]",
   fullNameDescription = "Provide the full name for the PDL search.",
-  locationLabel = "Location (City/Region/Country)",
+  locationLabel = "Location (City/Region/Country - Optional)",
   locationPlaceholder = "[e.g., Dhaka, London, or Bangladesh]",
-  locationDescription = "Specify a location to refine the PDL search.",
+  locationDescription = "Specify a location to refine the PDL search. Leave blank for a global name search.",
   buttonText = "Search PDL",
   loadingButtonText = "Searching PDL Database..."
 }: PersonSearchFormProps) {
@@ -57,7 +60,7 @@ export default function PersonSearchForm({
   });
 
   const handleSubmit = (values: PdlSearchFormValues) => {
-    onSubmit(values.fullName, values.location);
+    onSubmit(values.fullName, values.location || ""); // Pass empty string if location is undefined
   };
 
   return (
@@ -128,3 +131,4 @@ export default function PersonSearchForm({
     </Form>
   );
 }
+

@@ -14,7 +14,7 @@ import { z } from 'genkit';
 
 const PdlPersonSearchInputSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters.").describe('The full name of the person to search for.'),
-  location: z.string().min(2, "Location must be at least 2 characters.").describe('The location (e.g., city, region, country) to search within.'),
+  location: z.string().optional().describe('The location (e.g., city, region, country) to search within. Optional.'),
   size: z.number().optional().default(10).describe('Number of results to return.'),
 });
 type PdlPersonSearchInput = z.infer<typeof PdlPersonSearchInputSchema>;
@@ -80,7 +80,7 @@ const pdlPersonSearchFlow = ai.defineFlow(
     console.log(`[PDL Flow] PEOPLEDATALABS_API_KEY found. Starts with: ${apiKey.substring(0, 5)}...`);
 
     const nameParts = input.fullName.trim().split(/\s+/).filter(p => p.length > 0);
-    const locationTerm = input.location.trim();
+    const locationTerm = input.location?.trim();
     let pdlEsQueryForLogging: string | undefined;
 
     try {
@@ -118,7 +118,7 @@ const pdlPersonSearchFlow = ai.defineFlow(
         return { matches: [], totalMatches: 0, error: 'Full name is required for search.' };
       }
 
-      if (locationTerm) {
+      if (locationTerm && locationTerm.length > 0) {
         mustClauses.push({
           "bool": {
             "should": [
@@ -129,9 +129,8 @@ const pdlPersonSearchFlow = ai.defineFlow(
             ]
           }
         });
-      } else {
-        return { matches: [], totalMatches: 0, error: 'Location is required for search.' };
       }
+      // If locationTerm is not provided or empty, we don't add any location clauses, effectively making it a global search on name.
 
       const pdlEsQuery = {
         bool: {
@@ -174,14 +173,12 @@ const pdlPersonSearchFlow = ai.defineFlow(
         };
       }
       
-      if (!response.ok) { // Handles other errors (non-404 or 404s not of type 'not_found')
+      if (!response.ok) { 
         let errorDetails = `PDL API Error (${response.status}): ${response.statusText}`;
         try {
-          // const errorJson = JSON.parse(responseText); // responseData is already parsed
           errorDetails += ` - ${responseData.error?.message || responseData.message || 'No specific error message in JSON.'}`;
           if(responseData.error?.type) errorDetails += ` (Type: ${responseData.error.type})`;
         } catch (e) {
-          // This catch is less likely to be hit if responseData is already parsed
           errorDetails += ` - Could not parse error response JSON. Raw response: ${responseText.substring(0, 200)}`;
         }
         console.error('[PDL Flow] Error response details:', errorDetails);
@@ -223,8 +220,6 @@ const pdlPersonSearchFlow = ai.defineFlow(
           pdlQuery: pdlEsQueryForLogging,
         };
       } else {
-        // This case might be hit if response.ok was true but responseData.status wasn't 200,
-        // or if responseData.data was missing.
         console.warn('[PDL Flow] PDL API response was ok, but data was missing or status not 200. Response:', responseData);
         return {
           matches: [],
