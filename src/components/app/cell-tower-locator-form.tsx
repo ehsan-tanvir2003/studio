@@ -81,7 +81,6 @@ export default function CellTowerLocatorForm() {
         </CardTitle>
         <CardDescription>
           Find approximate location of a cell tower using its LAC and Cell ID.
-          Requires an Unwired Labs API key in your <code>.env</code> file. Default radio type is LTE.
         </CardDescription>
       </CardHeader>
       <CardContent>
