@@ -119,16 +119,15 @@ async function callPdlEnrichApi(input: PDLPersonSearchInput): Promise<PDLPersonS
   const apiKey = process.env.PEOPLEDATALABS_API_KEY;
   
   if (!apiKey) {
-    console.error('[PDL Flow] PEOPLEDATALABS_API_KEY is not configured or not found in process.env.');
-    return { matches: [], totalMatches: 0, errorMessage: 'PeopleDataLabs API key is not configured.' };
+    console.error('[PDL Flow] CRITICAL: PEOPLEDATALABS_API_KEY is not configured or not found in process.env.');
+    return { matches: [], totalMatches: 0, errorMessage: 'PeopleDataLabs API key is not configured in environment.' };
   }
-  console.log('[PDL Flow] PEOPLEDATALABS_API_KEY found.');
+  console.log(`[PDL Flow] PEOPLEDATALABS_API_KEY found. Starts with: ${apiKey.substring(0, 5)}...`);
 
   const baseUrl = 'https://api.peopledatalabs.com/v5/person/enrich';
   const params = new URLSearchParams({
     name: input.fullName,
-    location: input.city, // PDL Enrich API uses 'location' parameter
-    // Parameters to minimize response size and ensure consistency
+    location: input.city,
     pretty: 'false', 
     titlecase: 'false',
   });
@@ -136,6 +135,8 @@ async function callPdlEnrichApi(input: PDLPersonSearchInput): Promise<PDLPersonS
 
   try {
     console.log(`[PDL Flow] Sending GET request to PDL Enrich API: ${pdlApiUrl}`);
+    console.log(`[PDL Flow] Using API Key that starts with: ${apiKey.substring(0,5)}...`);
+    
     const response = await fetch(pdlApiUrl, {
       method: 'GET',
       headers: {
@@ -143,39 +144,48 @@ async function callPdlEnrichApi(input: PDLPersonSearchInput): Promise<PDLPersonS
         'X-Api-Key': apiKey,
       },
     });
-    console.log(`[PDL Flow] Received response from PDL API with status: ${response.status}`);
+    
+    console.log(`[PDL Flow] Received response from PDL API with status: ${response.status} ${response.statusText}`);
 
     if (response.status === 404) {
       console.log('[PDL Flow] PDL API returned 404 - Person not found.');
       const errorData = await response.json().catch(() => ({ message: 'Person not found and failed to parse error response.' }));
       const detailMessage = errorData?.error?.message || errorData?.message || "Person not found with the provided details.";
+      console.log(`[PDL Flow] 404 Detail: ${detailMessage}`);
       return { matches: [], totalMatches: 0, errorMessage: detailMessage };
     }
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response from PDL API' }));
-      console.error('[PDL Flow] PDL API Error Response:', errorData);
-      return { 
-        matches: [], 
-        totalMatches: 0,
-        errorMessage: `PDL API Error (${response.status}): ${errorData?.error?.message || errorData?.message || response.statusText || 'Unknown error'}` 
-      };
+      let errorBodyText = await response.text(); // Read body as text first
+      console.error(`[PDL Flow] PDL API Error Response (Status: ${response.status}): ${errorBodyText}`);
+      try {
+        const errorData = JSON.parse(errorBodyText); // Try to parse as JSON
+        return { 
+          matches: [], 
+          totalMatches: 0,
+          errorMessage: `PDL API Error (${response.status}): ${errorData?.error?.message || errorData?.message || response.statusText || 'Unknown error'}` 
+        };
+      } catch (parseError) {
+        // If JSON parsing fails, return the raw text
+        return { 
+          matches: [], 
+          totalMatches: 0,
+          errorMessage: `PDL API Error (${response.status}): ${response.statusText}. Raw non-JSON response: ${errorBodyText}` 
+        };
+      }
     }
 
     const personData = await response.json();
     console.log('[PDL Flow] Successfully parsed PDL API response data.');
 
-    // PDL Enrich API returns the person object directly if successful,
-    // sometimes it includes a "status: 200" in the body.
-    if (personData && (personData.status === 200 || response.status === 200)) {
-      const mappedPerson = mapPdlPersonToSchema(personData);
-      console.log(`[PDL Flow] Mapped 1 match from PDL Enrich response.`);
+    if (personData && (personData.status === 200 || response.status === 200)) { // PDL sometimes includes status in body
+      const mappedPerson = mapPdlPersonToSchema(personData); // `personData` itself is the person object for Enrich
+      console.log(`[PDL Flow] Mapped 1 match from PDL Enrich response for ${mappedPerson.fullName}.`);
       return {
         totalMatches: 1,
         matches: [mappedPerson],
       };
     } else {
-      // Should ideally be caught by !response.ok, but as a fallback
       console.error('[PDL Flow] PDL API returned non-200 status in body or unexpected structure:', personData);
       return { 
           matches: [], 
@@ -196,11 +206,12 @@ async function callPdlEnrichApi(input: PDLPersonSearchInput): Promise<PDLPersonS
 // Define and export the Genkit flow
 export const pdlPersonSearchFlow = ai.defineFlow(
   {
-    name: 'pdlPersonSearchFlow', // Name can remain, or be changed to pdlPersonEnrichFlow if preferred
+    name: 'pdlPersonSearchFlow',
     inputSchema: PDLPersonSearchInputSchema,
     outputSchema: PDLPersonSearchOutputSchema,
   },
   async (input) => {
+    console.log(`[PDL Flow] Flow invoked with input: FullName='${input.fullName}', City='${input.city}'`);
     return await callPdlEnrichApi(input);
   }
 );
