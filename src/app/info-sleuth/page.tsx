@@ -2,22 +2,23 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import PersonSearchForm from '@/components/app/person-search-form'; // Updated import
+import PersonSearchForm from '@/components/app/person-search-form';
 import ReportDisplay from '@/components/app/report-display';
-import type { PersonIntelOutput } from '@/ai/flows/person-intel-flow'; // Updated import
-import { performPersonSearch } from '@/app/actions'; // Updated import
+import type { PDLPersonSearchOutput } from '@/ai/flows/pdl-person-search-flow'; // Updated import
+import { performPersonSearch } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, ScanEye, UserSearch, FileScan, Network, ShieldCheck, Loader2 } from "lucide-react";
+import { Terminal, ScanEye, UserSearch, FileScan, Network, ShieldCheck, Loader2, DatabaseZap } from "lucide-react";
 
 const scanningIcons = [
   UserSearch,
+  DatabaseZap, // Changed icon to reflect data search
   FileScan,
   Network,
   ShieldCheck,
 ];
 
 export default function InfoSleuthPage() {
-  const [report, setReport] = useState<PersonIntelOutput | null>(null);
+  const [report, setReport] = useState<PDLPersonSearchOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentScanningIconIndex, setCurrentScanningIconIndex] = useState(0);
@@ -27,7 +28,7 @@ export default function InfoSleuthPage() {
     if (isLoading) {
       intervalId = setInterval(() => {
         setCurrentScanningIconIndex((prevIndex) => (prevIndex + 1) % scanningIcons.length);
-      }, 300); // Change icon every 300ms
+      }, 300); 
     } else {
       clearInterval(intervalId);
     }
@@ -40,7 +41,7 @@ export default function InfoSleuthPage() {
     setError(null);
     setCurrentScanningIconIndex(0); 
     try {
-      const result = await performPersonSearch(fullName, city); // Updated call
+      const result = await performPersonSearch(fullName, city);
       if ('error' in result) {
         setError(result.error);
       } else {
@@ -62,13 +63,13 @@ export default function InfoSleuthPage() {
         <ScanEye className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">InfoSleuth</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          OSINT Person Intel Analysis
+          PeopleDataLabs Intel Analysis
         </p>
       </header>
 
-      <main className="w-full max-w-2xl space-y-12">
+      <main className="w-full max-w-3xl space-y-12"> {/* Increased max-width for better report display */}
         <div>
-          <PersonSearchForm onSubmit={handleScan} isLoading={isLoading} /> {/* Updated component */}
+          <PersonSearchForm onSubmit={handleScan} isLoading={isLoading} />
           
           {error && (
             <Alert variant="destructive" className="mt-6 shadow-md border-destructive/70 bg-destructive/10">
@@ -92,7 +93,7 @@ export default function InfoSleuthPage() {
                     ))}
                 </div>
                 <p className="text-lg text-primary font-code font-medium">
-                  [ANALYZING_DIGITAL_FOOTPRINTS...]
+                  [QUERYING_PEOPLEDATALABS_DATABASE...]
                 </p>
                 <p className="text-sm text-muted-foreground font-code">Cross-referencing data streams // Please wait...</p>
                  <Loader2 className="w-6 h-6 text-muted-foreground animate-spin"/>

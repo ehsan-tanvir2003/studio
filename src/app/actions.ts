@@ -2,11 +2,11 @@
 // src/app/actions.ts
 "use server";
 
-import { personIntelSearch, type PersonIntelOutput, type PersonIntelInput } from '@/ai/flows/person-intel-flow'; // Updated import
+import { pdlPersonSearch, type PDLPersonSearchOutput, type PDLPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { fetchCellTowerLocation, type CellTowerLocation } from '@/services/unwiredlabs';
 import * as z from 'zod';
 
-// --- Person Intel Search (Previously Phone Number Scan) ---
+// --- Person Intel Search (Now using PeopleDataLabs) ---
 const personSearchSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters long.").max(100, "Full name is too long."),
   city: z.string().min(2, "City name must be at least 2 characters long.").max(100, "City name is too long."),
@@ -15,30 +15,35 @@ const personSearchSchema = z.object({
 export async function performPersonSearch(
   fullName: string, 
   city: string
-): Promise<PersonIntelOutput | { error: string }> {
+): Promise<PDLPersonSearchOutput | { error: string }> {
   const validationResult = personSearchSchema.safeParse({ fullName, city });
   if (!validationResult.success) {
     return { error: validationResult.error.errors.map(e => e.message).join(', ') };
   }
 
-  const input: PersonIntelInput = validationResult.data;
+  const input: PDLPersonSearchInput = validationResult.data;
 
   try {
-    const result = await personIntelSearch(input);
+    const result = await pdlPersonSearch(input);
+    if (result.errorMessage) {
+      return { error: result.errorMessage };
+    }
     return {
-      overallSummary: result.overallSummary || "No specific summary could be generated.",
-      probableMatches: result.probableMatches || [],
-      dataSourcesAnalyzed: result.dataSourcesAnalyzed || [],
+      totalMatches: result.totalMatches,
+      matches: result.matches || [],
     };
   } catch (error) {
-    console.error("Error in personIntelSearch AI flow:", error);
+    console.error("Error in pdlPersonSearch AI flow:", error);
     if (error instanceof Error) {
         if (error.message.includes("503") || error.message.toLowerCase().includes("model is overloaded") || error.message.toLowerCase().includes("service unavailable")) {
             return { error: "The AI service is temporarily busy or unavailable. Please try again in a few moments." };
         }
+         if (error.message.toLowerCase().includes('api key')) {
+            return { error: "PDL API Key error. Please check your configuration."}
+        }
         return { error: `AI processing failed: ${error.message}` };
     }
-    return { error: "An unexpected error occurred during the AI search." };
+    return { error: "An unexpected error occurred during the PDL search." };
   }
 }
 
