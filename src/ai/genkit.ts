@@ -9,6 +9,10 @@ import path from 'path';
 // It might be redundant if Next.js or another part of the toolchain already does it.
 try {
   config({ path: path.resolve(process.cwd(), '.env') });
+  console.log('[Genkit Init] Successfully called dotenv.config().');
+  console.log('[Genkit Init] GEMINI_API_KEY from process.env after config:', process.env.GEMINI_API_KEY ? 'Loaded' : 'Not Loaded');
+  console.log('[Genkit Init] GOOGLE_API_KEY from process.env after config:', process.env.GOOGLE_API_KEY ? 'Loaded' : 'Not Loaded');
+  console.log('[Genkit Init] PEOPLEDATALABS_API_KEY from process.env after config:', process.env.PEOPLEDATALABS_API_KEY ? 'Loaded' : 'Not Loaded');
 } catch (e) {
   console.error('[Genkit Init] Failed to load .env file:', e);
 }
@@ -19,7 +23,7 @@ const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 // Log the key (or lack thereof) for debugging
 // Only log a portion of the key for security if found
 const apiKeyPreview = apiKey ? `${apiKey.substring(0, 7)}...${apiKey.substring(apiKey.length - 4)}` : "NOT FOUND";
-console.log(`[Genkit Init] Attempting to use API Key (GOOGLE_API_KEY or GEMINI_API_KEY): '${apiKeyPreview}'`);
+console.log(`[Genkit Init] Attempting to use Google API Key (GOOGLE_API_KEY or GEMINI_API_KEY): '${apiKeyPreview}'`);
 
 if (!apiKey) {
   // This error will appear in the server logs if the key isn't found when this module loads.
@@ -38,4 +42,3 @@ export const ai = genkit({
   ],
   model: 'googleai/gemini-2.0-flash',
 });
-

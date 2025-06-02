@@ -74,10 +74,14 @@ export type PDLPersonSearchOutput = z.infer<typeof PDLPersonSearchOutputSchema>;
 
 // The actual flow function
 async function searchPDLApi(input: PDLPersonSearchInput): Promise<PDLPersonSearchOutput> {
+  console.log('[PDL Flow] Attempting to read PEOPLEDATALABS_API_KEY from process.env.');
   const apiKey = process.env.PEOPLEDATALABS_API_KEY;
+  
   if (!apiKey) {
+    console.error('[PDL Flow] PEOPLEDATALABS_API_KEY is not configured or not found in process.env.');
     return { matches: [], errorMessage: 'PeopleDataLabs API key is not configured.' };
   }
+  console.log('[PDL Flow] PEOPLEDATALABS_API_KEY found.');
 
   const pdlApiUrl = 'https://api.peopledatalabs.com/v5/person/search';
 
@@ -91,6 +95,7 @@ async function searchPDLApi(input: PDLPersonSearchInput): Promise<PDLPersonSearc
 
 
   try {
+    console.log(`[PDL Flow] Sending request to PDL API with query: ${sqlQuery}`);
     const response = await fetch(pdlApiUrl, {
       method: 'POST',
       headers: {
@@ -102,10 +107,11 @@ async function searchPDLApi(input: PDLPersonSearchInput): Promise<PDLPersonSearc
         size: 10, // Max number of results to return
       }),
     });
+    console.log(`[PDL Flow] Received response from PDL API with status: ${response.status}`);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response from PDL API' }));
-      console.error('PDL API Error Response:', errorData);
+      console.error('[PDL Flow] PDL API Error Response:', errorData);
       return { 
         matches: [], 
         errorMessage: `PDL API Error (${response.status}): ${errorData?.error?.message || errorData?.message || response.statusText || 'Unknown error'}` 
@@ -113,9 +119,10 @@ async function searchPDLApi(input: PDLPersonSearchInput): Promise<PDLPersonSearc
     }
 
     const data = await response.json();
+    console.log('[PDL Flow] Successfully parsed PDL API response data.');
 
     if (data.status !== 200) {
-        console.error('PDL API returned non-200 status in body:', data);
+        console.error('[PDL Flow] PDL API returned non-200 status in body:', data);
         return { 
             matches: [], 
             errorMessage: `PDL API Error: ${data?.error?.message || data?.message || 'Received non-200 status from PDL'}` 
@@ -159,13 +166,14 @@ async function searchPDLApi(input: PDLPersonSearchInput): Promise<PDLPersonSearc
       likelihood: pdlPerson.likelihood,
     }));
 
+    console.log(`[PDL Flow] Mapped ${matches.length} matches from PDL response.`);
     return {
       totalMatches: data.total || 0,
       matches: matches,
     };
 
   } catch (error) {
-    console.error('Error calling PDL API:', error);
+    console.error('[PDL Flow] Error calling PDL API:', error);
     if (error instanceof Error) {
         return { matches: [], errorMessage: `Failed to fetch data from PeopleDataLabs: ${error.message}` };
     }
