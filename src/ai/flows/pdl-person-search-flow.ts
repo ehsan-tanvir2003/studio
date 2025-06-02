@@ -12,14 +12,14 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const PdlPersonSearchInputSchema = z.object({
+const PdlPersonSearchInputSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters.").describe('The full name of the person to search for.'),
   location: z.string().min(2, "Location must be at least 2 characters.").describe('The location (e.g., city, region, country) to search within.'),
   size: z.number().optional().default(10).describe('Number of results to return.'),
 });
 export type PdlPersonSearchInput = z.infer<typeof PdlPersonSearchInputSchema>;
 
-export const PdlPersonSchema = z.object({
+const PdlPersonSchema = z.object({
   id: z.string().nullable().describe('PDL ID of the person.'),
   fullName: z.string().nullable().describe('Full name of the person.'),
   firstName: z.string().nullable().describe('First name.'),
@@ -46,7 +46,7 @@ export const PdlPersonSchema = z.object({
 });
 export type PdlPerson = z.infer<typeof PdlPersonSchema>;
 
-export const PdlPersonSearchOutputSchema = z.object({
+const PdlPersonSearchOutputSchema = z.object({
   matches: z.array(PdlPersonSchema).describe('Array of matching person profiles from PDL.'),
   totalMatches: z.number().describe('Total number of potential matches found by PDL.'),
   pdlQuery: z.string().optional().describe('The SQL-like query sent to PDL.'),
@@ -68,6 +68,7 @@ const pdlPersonSearchFlow = ai.defineFlow(
   async (input) => {
     const apiKey = process.env.PEOPLEDATALABS_API_KEY;
     console.log('[PDL Flow] Invoked with input:', JSON.stringify(input));
+    console.log('[PDL Flow] Attempting to read PEOPLEDATALABS_API_KEY from process.env.');
 
     if (!apiKey || apiKey === "YOUR_PDL_API_KEY_HERE" || apiKey.trim() === "") {
       console.error('[PDL Flow] CRITICAL: PEOPLEDATALABS_API_KEY is not configured or is a placeholder.');
