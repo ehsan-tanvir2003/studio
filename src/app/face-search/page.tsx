@@ -62,24 +62,24 @@ export default function RapidApiFaceSearchPage() {
                 <CardTitle className="font-headline text-primary">RapidAPI Configuration</CardTitle>
                 <CardDescription className="font-code text-muted-foreground">
                     Enter the specific RapidAPI endpoint URL you want to use for reverse image search.
-                    Your RAPIDAPI_KEY and RAPIDAPI_HOST (now set to osint-phone-email-names-search-everything.p.rapidapi.com) 
+                    Your RAPIDAPI_KEY and RAPIDAPI_HOST (now set to real-time-image-search.p.rapidapi.com) 
                     must be correctly configured in the .env file.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-2">
-                    <Label htmlFor="apiEndpointUrl" className="font-code text-muted-foreground">Full RapidAPI Endpoint URL</Label>
+                    <Label htmlFor="apiEndpointUrl" className="font-code text-muted-foreground">Full RapidAPI Endpoint URL for Reverse Image Search</Label>
                     <Input
                         id="apiEndpointUrl"
                         type="url"
-                        placeholder="https://osint-phone-email-names-search-everything.p.rapidapi.com/YOUR_ENDPOINT_PATH"
+                        placeholder="https://real-time-image-search.p.rapidapi.com/REVERSE_IMAGE_SEARCH_PATH"
                         value={apiEndpointUrl}
                         onChange={(e) => setApiEndpointUrl(e.target.value)}
                         className="font-code bg-input/50 focus:bg-input border-border focus:border-primary"
                         disabled={isLoading}
                     />
                      <p className="text-xs font-code text-muted-foreground/70">
-                        Ensure this is the complete URL for the reverse image search functionality of the chosen API.
+                        Find the correct endpoint path for *reverse image search* or *image upload search* from the API's documentation on RapidAPI. The URL you provided previously was for a text-based search.
                     </p>
                 </div>
             </CardContent>
@@ -106,7 +106,7 @@ export default function RapidApiFaceSearchPage() {
             <AlertDescription className="font-code text-destructive/90">
               {error}
                {!error.toLowerCase().includes("rapidapi key") && !error.toLowerCase().includes("rapidapi host") && !error.toLowerCase().includes("endpoint url") && (
-                 <p className="mt-2 text-xs">Ensure the RapidAPI Endpoint URL is correct and your RAPIDAPI_KEY/RAPIDAPI_HOST in the .env file are valid for this endpoint.</p>
+                 <p className="mt-2 text-xs">Ensure the RapidAPI Endpoint URL is correct for reverse image search and your RAPIDAPI_KEY/RAPIDAPI_HOST in the .env file are valid for this endpoint.</p>
                )}
             </AlertDescription>
           </Alert>
@@ -117,11 +117,10 @@ export default function RapidApiFaceSearchPage() {
         {!results && !isLoading && !error && (
              <div className="text-center py-8 text-muted-foreground font-code">
               <Info className="mx-auto h-10 w-10 mb-3 text-primary/50"/>
-              Upload an image and provide the full RapidAPI endpoint URL to see results.
+              Upload an image and provide the full RapidAPI endpoint URL for reverse image search to see results.
             </div>
         )}
       </main>
     </div>
   );
 }
-
