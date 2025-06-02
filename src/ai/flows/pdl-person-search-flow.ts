@@ -39,17 +39,16 @@ const PdlPersonSchema = z.object({
   phoneNumbers: z.array(z.string()).nullable().describe('List of phone numbers.'),
   emails: z.array(z.object({ address: z.string(), type: z.string().nullable() })).nullable().describe('List of email addresses.'),
   likelihood: z.number().nullable().describe('Likelihood score from PDL (1-5).'),
-  // Add other fields as needed from PDL person schema
   skills: z.array(z.string()).nullable().describe('List of skills.'),
   summary: z.string().nullable().describe('Professional summary.'),
-  dataset_version: z.string().optional().describe('PDL dataset version.'), // internal field from PDL
+  dataset_version: z.string().optional().describe('PDL dataset version.'),
 });
 export type PdlPerson = z.infer<typeof PdlPersonSchema>;
 
 const PdlPersonSearchOutputSchema = z.object({
   matches: z.array(PdlPersonSchema).describe('Array of matching person profiles from PDL.'),
   totalMatches: z.number().describe('Total number of potential matches found by PDL.'),
-  pdlQuery: z.string().optional().describe('The SQL-like query sent to PDL.'),
+  pdlQuery: z.string().optional().describe('The Elasticsearch-style JSON query sent to PDL.'),
   error: z.string().optional().describe('Error message if the search failed.'),
 });
 export type PdlPersonSearchOutput = z.infer<typeof PdlPersonSearchOutputSchema>;
@@ -80,38 +79,80 @@ const pdlPersonSearchFlow = ai.defineFlow(
     }
     console.log(`[PDL Flow] PEOPLEDATALABS_API_KEY found. Starts with: ${apiKey.substring(0, 5)}...`);
 
-    // Construct a more robust query, handling potential variations
-    // This is a simplified example; PDL's SQL is quite flexible.
-    // For production, consider more advanced query building or using their 'match_requirements' for better relevance.
-    const nameParts = input.fullName.split(' ').map(part => part.trim()).filter(part => part.length > 0);
-    let nameCondition = "";
-    if (nameParts.length === 1) {
-      nameCondition = `(full_name LIKE '%${nameParts[0]}%' OR first_name LIKE '%${nameParts[0]}%' OR last_name LIKE '%${nameParts[0]}%')`;
-    } else if (nameParts.length > 1) {
-      // Simple two-part name assumption, could be more complex
-      nameCondition = `((first_name LIKE '%${nameParts[0]}%' AND last_name LIKE '%${nameParts.slice(1).join(' ')}%') OR full_name LIKE '%${input.fullName}%')`;
-    } else {
-       return { matches: [], totalMatches: 0, error: 'Full name is required for search.' };
-    }
-
-    const locationCondition = `(location_locality = '${input.location}' OR location_region = '${input.location}' OR location_country = '${input.location}' OR location_name LIKE '%${input.location}%')`;
-    
-    const pdlQuery = `SELECT * FROM person WHERE ${nameCondition} AND ${locationCondition};`;
-    console.log('[PDL Flow] Constructed PDL Query:', pdlQuery);
-
-    const requestBody = {
-      query: {
-        sql: pdlQuery,
-      },
-      size: input.size || 10,
-      // from: 0, // for pagination
-      // title_case: true, // to attempt to normalize capitalization
-    };
-
-    const PDL_SEARCH_API_URL = 'https://api.peopledatalabs.com/v5/person/search';
+    const nameParts = input.fullName.trim().split(/\s+/).filter(p => p.length > 0);
+    const locationTerm = input.location.trim();
+    let pdlEsQueryForLogging: string | undefined;
 
     try {
+      const mustClauses: any[] = [];
+
+      if (nameParts.length > 0) {
+        if (nameParts.length === 1) {
+          mustClauses.push({
+            "bool": {
+              "should": [
+                { "match": { "first_name": nameParts[0] } },
+                { "match": { "last_name": nameParts[0] } },
+                { "match_phrase": { "full_name": input.fullName } }
+              ],
+              "minimum_should_match": 1
+            }
+          });
+        } else {
+          mustClauses.push({
+            "bool": {
+              "should": [
+                {
+                  "bool": {
+                    "must": [
+                      { "match": { "first_name": nameParts[0] } },
+                      { "match_phrase": { "last_name": nameParts.slice(1).join(" ") } }
+                    ]
+                  }
+                },
+                { "match_phrase": { "full_name": input.fullName } }
+              ],
+              "minimum_should_match": 1
+            }
+          });
+        }
+      } else {
+        return { matches: [], totalMatches: 0, error: 'Full name is required for search.' };
+      }
+
+      if (locationTerm) {
+        mustClauses.push({
+          "bool": {
+            "should": [
+              { "match": { "location_locality": locationTerm } },
+              { "match": { "location_region": locationTerm } },
+              { "match": { "location_country": locationTerm } },
+              { "match_phrase": { "location_name": locationTerm } }
+            ],
+            "minimum_should_match": 1
+          }
+        });
+      } else {
+        return { matches: [], totalMatches: 0, error: 'Location is required for search.' };
+      }
+
+      const pdlEsQuery = {
+        bool: {
+          must: mustClauses,
+        },
+      };
+      pdlEsQueryForLogging = JSON.stringify(pdlEsQuery);
+      console.log('[PDL Flow] Constructed PDL Elasticsearch Query:', pdlEsQueryForLogging);
+
+      const requestBody = {
+        query: pdlEsQuery,
+        size: input.size || 10,
+        // title_case: true, // Optional
+      };
+
+      const PDL_SEARCH_API_URL = 'https://api.peopledatalabs.com/v5/person/search';
       console.log(`[PDL Flow] Sending POST request to PDL Search API: ${PDL_SEARCH_API_URL}`);
+      
       const response = await fetch(PDL_SEARCH_API_URL, {
         method: 'POST',
         headers: {
@@ -123,7 +164,7 @@ const pdlPersonSearchFlow = ai.defineFlow(
 
       const responseText = await response.text();
       console.log(`[PDL Flow] Received response from PDL API with status: ${response.status} ${response.statusText}`);
-      // console.log('[PDL Flow] PDL API Raw Response Body:', responseText);
+      // console.log('[PDL Flow] PDL API Raw Response Body:', responseText); // Uncomment for very verbose debugging
 
       if (!response.ok) {
         let errorDetails = `PDL API Error (${response.status}): ${response.statusText}`;
@@ -135,14 +176,12 @@ const pdlPersonSearchFlow = ai.defineFlow(
           errorDetails += ` - Could not parse error response JSON. Raw response: ${responseText.substring(0, 200)}`;
         }
         console.error('[PDL Flow] Error response details:', errorDetails);
-        return { matches: [], totalMatches: 0, error: errorDetails, pdlQuery: pdlQuery };
+        return { matches: [], totalMatches: 0, error: errorDetails, pdlQuery: pdlEsQueryForLogging };
       }
 
       const responseData = JSON.parse(responseText);
 
       if (responseData.status === 200 && responseData.data) {
-        // Map PDL data to our PdlPerson schema.
-        // This is a simplified mapping; you might need to adjust based on the actual fields you care about.
         const matches: PdlPerson[] = responseData.data.map((pdlPerson: any) => ({
           id: pdlPerson.id,
           fullName: pdlPerson.full_name,
@@ -171,7 +210,7 @@ const pdlPersonSearchFlow = ai.defineFlow(
         return {
           matches: matches,
           totalMatches: responseData.total || 0,
-          pdlQuery: pdlQuery,
+          pdlQuery: pdlEsQueryForLogging,
         };
       } else {
         console.warn('[PDL Flow] PDL API did not return status 200 or data was missing. Response:', responseData);
@@ -179,7 +218,7 @@ const pdlPersonSearchFlow = ai.defineFlow(
           matches: [],
           totalMatches: 0,
           error: `PDL API returned status ${responseData.status || response.status} but data was missing or malformed.`,
-          pdlQuery: pdlQuery,
+          pdlQuery: pdlEsQueryForLogging,
         };
       }
     } catch (error) {
@@ -188,7 +227,7 @@ const pdlPersonSearchFlow = ai.defineFlow(
       if (error instanceof Error) {
         errorMessage = `PDL Search Exception: ${error.message}`;
       }
-      return { matches: [], totalMatches: 0, error: errorMessage, pdlQuery: pdlQuery };
+      return { matches: [], totalMatches: 0, error: errorMessage, pdlQuery: pdlEsQueryForLogging };
     }
   }
 );
