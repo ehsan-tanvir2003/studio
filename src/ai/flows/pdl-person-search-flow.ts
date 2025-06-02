@@ -1,10 +1,10 @@
 
 'use server';
 /**
- * @fileOverview Uses PeopleDataLabs (PDL) Person Enrich API to find details
+ * @fileOverview Uses PeopleDataLabs (PDL) Person Search API to find details
  * for a person based on name and city.
  *
- * - pdlPersonSearch - A function that handles the PDL person enrichment.
+ * - pdlPersonSearch - A function that handles the PDL person search.
  * - PDLPersonSearchInput - The input type for the pdlPersonSearch function.
  * - PDLPersonSearchOutput - The return type for the pdlPersonSearch function.
  */
@@ -12,14 +12,14 @@
 import { z } from 'genkit';
 import { ai } from '@/ai/genkit';
 
-// Define input schema (remains the same)
+// Define input schema
 const PDLPersonSearchInputSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters.").describe('The full name of the person to search for.'),
   city: z.string().min(2, "City name must be at least 2 characters.").describe('The city or region to narrow down the search.'),
 });
 export type PDLPersonSearchInput = z.infer<typeof PDLPersonSearchInputSchema>;
 
-// Define schemas for nested parts of the PDL response we care about (remains the same)
+// Define schemas for nested parts of the PDL response we care about
 const PDLSocialProfileSchema = z.object({
   service: z.string().optional().describe("Name of the social media service (e.g., linkedin, facebook)"),
   url: z.string().url().optional().describe("URL to the social media profile"),
@@ -60,14 +60,14 @@ const PDLMatchedPersonSchema = z.object({
   socialProfiles: z.array(PDLSocialProfileSchema).optional().describe("Associated social media profiles"),
   experience: z.array(PDLExperienceSchema).optional().describe("Work experience"),
   education: z.array(PDLEducationSchema).optional().describe("Education history"),
-  likelihood: z.number().optional().describe("PDL's likelihood score for the match (0-10)"),
+  likelihood: z.number().optional().describe("PDL's likelihood score for the match (0-10)"), // Present in each search result item
 });
 export type PDLMatchedPerson = z.infer<typeof PDLMatchedPersonSchema>;
 
-// Define output schema (totalMatches will be 0 or 1)
+// Define output schema for Search API
 const PDLPersonSearchOutputSchema = z.object({
-  totalMatches: z.number().optional().describe('Total number of unique matches found by PDL (0 or 1 for enrich).'),
-  matches: z.array(PDLMatchedPersonSchema).describe('List containing the matched person profile from PDL (0 or 1 item).'),
+  totalMatches: z.number().optional().describe('Total number of unique matches found by PDL.'),
+  matches: z.array(PDLMatchedPersonSchema).describe('List containing the matched person profiles from PDL.'),
   errorMessage: z.string().optional().describe('Error message if the search failed.'),
 });
 export type PDLPersonSearchOutput = z.infer<typeof PDLPersonSearchOutputSchema>;
@@ -75,7 +75,7 @@ export type PDLPersonSearchOutput = z.infer<typeof PDLPersonSearchOutputSchema>;
 // Helper function to map PDL API response person object to our schema
 function mapPdlPersonToSchema(pdlPerson: any): PDLMatchedPerson {
   return {
-    id: pdlPerson.pdl_id || pdlPerson.id, // Enrich API might use 'pdl_id'
+    id: pdlPerson.id, // Search API uses 'id'
     fullName: pdlPerson.full_name,
     firstName: pdlPerson.first_name,
     lastName: pdlPerson.last_name,
@@ -108,13 +108,12 @@ function mapPdlPersonToSchema(pdlPerson: any): PDLMatchedPerson {
       degrees: edu.degrees || [],
       endDate: edu.end_date,
     })),
-    likelihood: pdlPerson.likelihood,
+    likelihood: pdlPerson.likelihood, // Likelihood is per person in search results
   };
 }
 
-
-// The actual flow function using Person Enrich API
-async function callPdlEnrichApi(input: PDLPersonSearchInput): Promise<PDLPersonSearchOutput> {
+// The actual flow function using Person Search API
+async function callPdlSearchApi(input: PDLPersonSearchInput): Promise<PDLPersonSearchOutput> {
   console.log('[PDL Flow] Attempting to read PEOPLEDATALABS_API_KEY from process.env.');
   const apiKey = process.env.PEOPLEDATALABS_API_KEY;
   
@@ -124,49 +123,55 @@ async function callPdlEnrichApi(input: PDLPersonSearchInput): Promise<PDLPersonS
   }
   console.log(`[PDL Flow] PEOPLEDATALABS_API_KEY found. Starts with: ${apiKey.substring(0, 5)}...`);
 
-  const baseUrl = 'https://api.peopledatalabs.com/v5/person/enrich';
-  const params = new URLSearchParams({
-    name: input.fullName,
-    location: input.city,
-    pretty: 'false', 
-    titlecase: 'false',
-  });
-  const pdlApiUrl = `${baseUrl}?${params.toString()}`;
+  const pdlApiUrl = 'https://api.peopledatalabs.com/v5/person/search';
+  
+  // Construct SQL query carefully to avoid injection if user input were directly used,
+  // though here it's from a trusted source (our form).
+  // PDL uses single quotes for string literals in their SQL.
+  // Escape single quotes in user input if necessary, though PDL might handle this.
+  // For simplicity, assuming names/cities don't contain SQL-breaking characters.
+  const sqlQuery = `SELECT * FROM person WHERE (name = '${input.fullName.replace(/'/g, "''")}' AND (location_locality = '${input.city.replace(/'/g, "''")}' OR location_region = '${input.city.replace(/'/g, "''")}'));`;
+
+  const requestBody = {
+    query: {
+      sql: sqlQuery,
+    },
+    size: 10, // Max number of results to return
+    pretty: false,
+    titlecase: false,
+  };
 
   try {
-    console.log(`[PDL Flow] Sending GET request to PDL Enrich API: ${pdlApiUrl}`);
+    console.log(`[PDL Flow] Sending POST request to PDL Search API: ${pdlApiUrl}`);
     console.log(`[PDL Flow] Using API Key that starts with: ${apiKey.substring(0,5)}...`);
+    console.log(`[PDL Flow] Request body: ${JSON.stringify(requestBody)}`);
     
     const response = await fetch(pdlApiUrl, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Api-Key': apiKey,
       },
+      body: JSON.stringify(requestBody),
     });
     
     console.log(`[PDL Flow] Received response from PDL API with status: ${response.status} ${response.statusText}`);
 
-    if (response.status === 404) {
-      console.log('[PDL Flow] PDL API returned 404 - Person not found.');
-      const errorData = await response.json().catch(() => ({ message: 'Person not found and failed to parse error response.' }));
-      const detailMessage = errorData?.error?.message || errorData?.message || "Person not found with the provided details.";
-      console.log(`[PDL Flow] 404 Detail: ${detailMessage}`);
-      return { matches: [], totalMatches: 0, errorMessage: detailMessage };
-    }
-
     if (!response.ok) {
-      let errorBodyText = await response.text(); // Read body as text first
+      let errorBodyText = await response.text(); 
       console.error(`[PDL Flow] PDL API Error Response (Status: ${response.status}): ${errorBodyText}`);
       try {
-        const errorData = JSON.parse(errorBodyText); // Try to parse as JSON
+        const errorData = JSON.parse(errorBodyText); 
+        const detailMessage = errorData?.error?.message || errorData?.message || response.statusText || 'Unknown error';
+        if (response.status === 404 && detailMessage.toLowerCase().includes("no person found")) {
+             return { matches: [], totalMatches: 0, errorMessage: `No person found matching the criteria: ${input.fullName} in ${input.city}. (${detailMessage})` };
+        }
         return { 
           matches: [], 
           totalMatches: 0,
-          errorMessage: `PDL API Error (${response.status}): ${errorData?.error?.message || errorData?.message || response.statusText || 'Unknown error'}` 
+          errorMessage: `PDL API Error (${response.status}): ${detailMessage}` 
         };
       } catch (parseError) {
-        // If JSON parsing fails, return the raw text
         return { 
           matches: [], 
           totalMatches: 0,
@@ -175,22 +180,22 @@ async function callPdlEnrichApi(input: PDLPersonSearchInput): Promise<PDLPersonS
       }
     }
 
-    const personData = await response.json();
+    const responseData = await response.json();
     console.log('[PDL Flow] Successfully parsed PDL API response data.');
 
-    if (personData && (personData.status === 200 || response.status === 200)) { // PDL sometimes includes status in body
-      const mappedPerson = mapPdlPersonToSchema(personData); // `personData` itself is the person object for Enrich
-      console.log(`[PDL Flow] Mapped 1 match from PDL Enrich response for ${mappedPerson.fullName}.`);
+    if (responseData && responseData.status === 200) {
+      const mappedMatches = (responseData.data || []).map(mapPdlPersonToSchema);
+      console.log(`[PDL Flow] Mapped ${mappedMatches.length} matches from PDL Search response. Total found by PDL: ${responseData.total || 0}.`);
       return {
-        totalMatches: 1,
-        matches: [mappedPerson],
+        totalMatches: responseData.total || 0,
+        matches: mappedMatches,
       };
     } else {
-      console.error('[PDL Flow] PDL API returned non-200 status in body or unexpected structure:', personData);
+      console.error('[PDL Flow] PDL API returned non-200 status in body or unexpected structure:', responseData);
       return { 
           matches: [], 
           totalMatches: 0,
-          errorMessage: `PDL API Error: ${personData?.error?.message || personData?.message || 'Received unexpected response structure from PDL'}` 
+          errorMessage: `PDL API Error: ${responseData?.error?.message || responseData?.message || 'Received unexpected response structure from PDL'}` 
       };
     }
 
@@ -212,7 +217,7 @@ export const pdlPersonSearchFlow = ai.defineFlow(
   },
   async (input) => {
     console.log(`[PDL Flow] Flow invoked with input: FullName='${input.fullName}', City='${input.city}'`);
-    return await callPdlEnrichApi(input);
+    return await callPdlSearchApi(input);
   }
 );
 
@@ -220,3 +225,5 @@ export const pdlPersonSearchFlow = ai.defineFlow(
 export async function pdlPersonSearch(input: PDLPersonSearchInput): Promise<PDLPersonSearchOutput> {
   return pdlPersonSearchFlow(input);
 }
+
+    

@@ -52,7 +52,7 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="[Full Name of the Individual]" 
+                  placeholder="[Enter Full Name to Search]" 
                   {...field} 
                   className="text-base h-12 font-code bg-input/50 focus:bg-input border-border focus:border-primary"
                   aria-describedby="fullname-description"
@@ -60,7 +60,7 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
                 />
               </FormControl>
               <FormDescription id="fullname-description" className="text-sm font-code text-muted-foreground/80">
-                Provide the full name of the person whose profile you want to enrich.
+                Provide the full name of the person you are searching for.
               </FormDescription>
               <FormMessage className="font-code text-destructive/80" />
             </FormItem>
@@ -76,7 +76,7 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="[City/Region for Context e.g., London]" 
+                  placeholder="[Enter City/Region e.g., Dhaka]" 
                   {...field} 
                   className="text-base h-12 font-code bg-input/50 focus:bg-input border-border focus:border-primary"
                   aria-describedby="city-description"
@@ -84,7 +84,7 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
                 />
               </FormControl>
               <FormDescription id="city-description" className="text-sm font-code text-muted-foreground/80">
-                Specify the person's city or general region to help identify the correct profile.
+                Specify the person's city or general region to refine the search.
               </FormDescription>
               <FormMessage className="font-code text-destructive/80" />
             </FormItem>
@@ -94,12 +94,12 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Enriching Profile...
+              Searching Intel Database...
             </>
           ) : (
             <>
               <Search className="mr-2 h-5 w-5" />
-              [Enrich Profile]
+              [Initiate Search]
             </>
           )}
         </Button>
@@ -107,4 +107,5 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
     </Form>
   );
 }
+
     

@@ -4,10 +4,10 @@
 import { useState, useEffect } from 'react';
 import PersonSearchForm from '@/components/app/person-search-form';
 import ReportDisplay from '@/components/app/report-display';
-import type { PDLPersonSearchOutput } from '@/ai/flows/pdl-person-search-flow'; // Updated import
+import type { PDLPersonSearchOutput } from '@/ai/flows/pdl-person-search-flow';
 import { performPersonSearch } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, ScanEye, UserSearch, FileScan, Network, ShieldCheck, Loader2, DatabaseZap } from "lucide-react";
+import { Terminal, ScanEye, UserSearch, FileScan, Network, ShieldCheck, Loader2, DatabaseZap, Users } from "lucide-react"; // Added Users
 
 const scanningIcons = [
   UserSearch,
@@ -15,6 +15,7 @@ const scanningIcons = [
   FileScan,
   Network,
   ShieldCheck,
+  Users, // Added Users icon
 ];
 
 export default function InfoSleuthPage() {
@@ -63,11 +64,11 @@ export default function InfoSleuthPage() {
         <ScanEye className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">InfoSleuth</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          PeopleDataLabs Profile Enrichment
+          PeopleDataLabs Intel Analysis
         </p>
       </header>
 
-      <main className="w-full max-w-3xl space-y-12"> {/* Increased max-width for better report display */}
+      <main className="w-full max-w-3xl space-y-12">
         <div>
           <PersonSearchForm onSubmit={handleScan} isLoading={isLoading} />
           
@@ -93,9 +94,9 @@ export default function InfoSleuthPage() {
                     ))}
                 </div>
                 <p className="text-lg text-primary font-code font-medium">
-                  [ENRICHING_PROFILE_FROM_PEOPLEDATALABS...]
+                  [SEARCHING_PEOPLEDATALABS_DATABASE...]
                 </p>
-                <p className="text-sm text-muted-foreground font-code">Fetching detailed information // Please wait...</p>
+                <p className="text-sm text-muted-foreground font-code">Gathering intelligence // Please wait...</p>
                  <Loader2 className="w-6 h-6 text-muted-foreground animate-spin"/>
               </div>
             </div>
@@ -107,4 +108,5 @@ export default function InfoSleuthPage() {
     </div>
   );
 }
+
     
