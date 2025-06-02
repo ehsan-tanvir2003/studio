@@ -12,9 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle } from 'lucide-react';
-import { locateCellTower, type CellTowerLocatorInput } from '@/app/actions';
-import type { CellTowerLocation } from '@/services/unwiredlabs';
+import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle, Camera } from 'lucide-react';
+import { locateCellTower, type CellTowerLocatorInput, type CellTowerLocationResult } from '@/app/actions'; // Updated import for result type
+// CellTowerLocationFromOpenCellID is the success type within CellTowerLocationResult
+import type { CellTowerLocationFromOpenCellID } from '@/services/opencellid';
+
 
 const BANGLADESH_OPERATORS = [
   { name: 'Grameenphone (GP)', mnc: '01', logoUrl: 'https://placehold.co/120x40.png', logoHint: 'grameenphone logo' },
@@ -37,7 +39,7 @@ function getZoomLevel(accuracy: number): number {
   if (accuracy <= 100) return 18;
   if (accuracy <= 250) return 17;
   if (accuracy <= 500) return 16;
-  if (accuracy <= 1000) return 15;
+  if (accuracy <= 1000) return 15; // OpenCellID 'range' can be this
   if (accuracy <= 2500) return 14;
   if (accuracy <= 5000) return 13;
   if (accuracy <= 10000) return 12;
@@ -45,9 +47,25 @@ function getZoomLevel(accuracy: number): number {
 }
 
 export default function CellTowerLocatorForm() {
-  const [result, setResult] = useState<CellTowerLocation | null>(null);
+  const [result, setResult] = useState<CellTowerLocationFromOpenCellID | null>(null); // Store only success data
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [streetViewApiKey, setStreetViewApiKey] = useState<string | null>(null);
+  const [streetViewUrl, setStreetViewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setStreetViewApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || null);
+  }, []);
+
+  useEffect(() => {
+    if (result && streetViewApiKey) {
+      const svUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${result.latitude},${result.longitude}&fov=90&heading=235&pitch=10&key=${streetViewApiKey}`;
+      setStreetViewUrl(svUrl);
+    } else {
+      setStreetViewUrl(null);
+    }
+  }, [result, streetViewApiKey]);
+
 
   const form = useForm<CellTowerFormValues>({
     resolver: zodResolver(formSchema),
@@ -63,6 +81,7 @@ export default function CellTowerLocatorForm() {
     setIsLoading(true);
     setResult(null);
     setError(null);
+    setStreetViewUrl(null);
 
     const inputData: CellTowerLocatorInput = {
       lac: parseInt(values.lac, 10),
@@ -71,15 +90,18 @@ export default function CellTowerLocatorForm() {
     };
 
     try {
-      const response = await locateCellTower(inputData);
+      const response: CellTowerLocationResult = await locateCellTower(inputData);
       if ('error' in response) {
         setError(response.error);
+        setResult(null);
       } else {
-        setResult(response);
+        setResult(response); // response is CellTowerLocationFromOpenCellID here
+        setError(null);
       }
     } catch (e) {
       setError("An unexpected error occurred while initiating the location search.");
       console.error(e);
+      setResult(null);
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +118,7 @@ export default function CellTowerLocatorForm() {
           Tower Signal Parameters
         </CardTitle>
         <CardDescription className="font-code text-muted-foreground/80">
-          Input LAC, Cell ID, and Operator MNC to triangulate tower position.
+          Input LAC, Cell ID, and Operator MNC to triangulate tower position using OpenCellID data.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -175,13 +197,13 @@ export default function CellTowerLocatorForm() {
             <div role="status" className="flex flex-col items-center">
               <Loader2 className="w-8 h-8 text-muted-foreground animate-spin fill-accent" />
               <p className="mt-3 text-md text-muted-foreground font-code font-medium">
-                [Querying Unwired Labs API // Standby...]
+                [Querying OpenCellID API // Standby...]
               </p>
             </div>
           </div>
         )}
 
-        {error && (
+        {error && !isLoading && (
           <Alert variant="destructive" className="mt-6 shadow-sm border-destructive/70 bg-destructive/10">
             <RadioTower className="h-5 w-5 text-destructive" />
             <AlertTitle className="font-headline text-destructive">Location Error</AlertTitle>
@@ -191,11 +213,11 @@ export default function CellTowerLocatorForm() {
           </Alert>
         )}
 
-        {result && !isLoading && (
+        {result && !isLoading && !error && (
           <Card className="mt-6 bg-card/50 shadow-lg border border-border/30">
             <CardHeader>
               <CardTitle className="text-xl font-headline text-accent flex items-center">
-                <CheckCircle className="mr-2 h-6 w-6 text-green-400" /> Location Data Acquired
+                <CheckCircle className="mr-2 h-6 w-6 text-green-400" /> Location Data Acquired (via OpenCellID)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm font-code">
@@ -227,16 +249,18 @@ export default function CellTowerLocatorForm() {
                 </div>
                 <div className="flex items-center">
                   <RadioTower className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <strong>Accuracy:</strong> <span className="ml-1 text-foreground">{result.accuracy} meters</span>
+                  <strong>Accuracy (Range):</strong> <span className="ml-1 text-foreground">{result.accuracy} meters</span>
                 </div>
               </div>
               
+              {/* Address is not available from OpenCellID directly
               {result.address && (
                 <div className="flex items-start">
                   <Home className="mr-2 h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <strong>Address:</strong> <span className="ml-1 break-all text-foreground">{result.address}</span>
                 </div>
               )}
+              */}
               <div className="flex items-center">
                 <LinkIcon className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <strong>Google Maps:</strong>
@@ -264,10 +288,39 @@ export default function CellTowerLocatorForm() {
                  <div className="flex items-start text-xs text-muted-foreground/90 mt-2 p-2 bg-muted/30 rounded-md border border-border/20">
                   <AlertCircle className="mr-2 h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
                   <span>
-                    The tower's approximate location is marked. It is estimated to be within a <strong>{result.accuracy} meter radius</strong> of this point. The map zoom level has been adjusted to reflect this accuracy.
+                    The tower's approximate location is marked. It is estimated to be within a <strong>{result.accuracy} meter radius (range)</strong> of this point. The map zoom level has been adjusted to reflect this accuracy. Data from OpenCellID.
                   </span>
                 </div>
               </div>
+
+              {streetViewUrl && streetViewApiKey && (
+                <div className="mt-4">
+                  <h4 className="text-md font-headline text-muted-foreground mb-2 flex items-center"><Camera className="mr-2 h-5 w-5"/>Street View</h4>
+                  <Image
+                    src={streetViewUrl}
+                    alt="Google Street View of the location"
+                    width={600}
+                    height={300}
+                    className="rounded-md border border-border/50 shadow-sm"
+                    data-ai-hint="street view location"
+                  />
+                   <div className="flex items-start text-xs text-muted-foreground/90 mt-2 p-2 bg-muted/30 rounded-md border border-border/20">
+                    <AlertCircle className="mr-2 h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                    <span>
+                      Street View imagery at the coordinates. If this shows a "no imagery" placeholder, Google does not have Street View for this exact spot.
+                      Ensure your NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in the .env file has the 'Street View Static API' enabled.
+                    </span>
+                  </div>
+                </div>
+              )}
+              {!streetViewApiKey && result && (
+                 <div className="flex items-start text-xs text-muted-foreground/90 mt-2 p-2 bg-muted/30 rounded-md border border-border/20">
+                  <AlertCircle className="mr-2 h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                  <span>
+                    Street View could not be loaded. NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not configured or does not have the 'Street View Static API' enabled. Please check your .env file.
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

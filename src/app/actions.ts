@@ -4,7 +4,7 @@
 
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { searchFaceWithFaceCheck, type FaceCheckInput, type FaceCheckOutput } from '@/ai/flows/face-check-flow';
-import { fetchCellTowerLocation, type CellTowerLocation } from '@/services/unwiredlabs';
+import { fetchCellTowerLocationFromOpenCellID, type CellTowerLocationFromOpenCellID } from '@/services/opencellid'; // Updated import
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -48,6 +48,8 @@ export async function searchPdlProfiles(
 }
 
 // --- FaceCheck.ID Search ---
+// This action is currently not used as FaceSearch page directly links/embeds FaceCheck.ID website.
+// Keeping it here for potential future API integration.
 const faceCheckSearchSchema = z.object({
   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
 });
@@ -79,37 +81,41 @@ export async function searchWithFaceCheckApi(
 }
 
 
-// --- Cell Tower Locator ---
+// --- Cell Tower Locator (using OpenCellID) ---
 const BANGLADESH_MCC = 470; 
 
 const cellTowerLocatorSchema = z.object({
   lac: z.coerce.number().int().positive("LAC must be a positive integer."),
   cellId: z.coerce.number().int().positive("Cell ID must be a positive integer."),
-  mnc: z.string().min(1, "Operator selection is required."),
+  mnc: z.string().min(1, "Operator selection is required."), // mnc from form is string
 });
 
 export type CellTowerLocatorInput = z.infer<typeof cellTowerLocatorSchema>;
 
+// Define the return type for the locateCellTower action
+export type CellTowerLocationResult = CellTowerLocationFromOpenCellID | { error: string };
+
 export async function locateCellTower(
   input: CellTowerLocatorInput
-): Promise<CellTowerLocation | { error: string }> {
+): Promise<CellTowerLocationResult> {
   const validationResult = cellTowerLocatorSchema.safeParse(input);
   if (!validationResult.success) {
     return { error: validationResult.error.errors.map(e => e.message).join(', ') };
   }
 
-  const { lac, cellId, mnc } = validationResult.data;
-  const apiKey = process.env.UNWIREDLABS_API_KEY;
+  const { lac, cellId, mnc: mncString } = validationResult.data;
+  const apiKey = process.env.OPENCELLID_API_KEY;
 
-  if (!apiKey || apiKey === "YOUR_UNWIREDLABS_API_KEY_HERE") {
-    console.error("UNWIREDLABS_API_KEY is not set or is a placeholder in .env file");
-    return { error: "Service configuration error: Unwired Labs API key missing or invalid." };
+  if (!apiKey || apiKey === "YOUR_OPENCELLID_API_KEY_HERE" || apiKey.trim() === "") {
+    console.error("OPENCELLID_API_KEY is not set or is a placeholder in .env file");
+    return { error: "Service configuration error: OpenCellID API key missing or invalid." };
   }
   
-  const mncNumber = parseInt(mnc, 10);
+  const mncNumber = parseInt(mncString, 10);
   if (isNaN(mncNumber)) {
       return { error: "Invalid operator MNC."}
   }
 
-  return fetchCellTowerLocation(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId);
+  // Call the new service function
+  return fetchCellTowerLocationFromOpenCellID(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId);
 }
