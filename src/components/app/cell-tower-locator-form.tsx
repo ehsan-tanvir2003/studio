@@ -5,22 +5,23 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Image from 'next/image'; // Added import for next/image
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle } from 'lucide-react';
+import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle, Building } from 'lucide-react'; // Added Building icon
 import { locateCellTower, type CellTowerLocatorInput } from '@/app/actions';
 import type { CellTowerLocation } from '@/services/unwiredlabs';
 
 const BANGLADESH_OPERATORS = [
-  { name: 'Grameenphone (GP)', mnc: '01' },
-  { name: 'Robi', mnc: '02' },
-  { name: 'Banglalink', mnc: '03' },
-  { name: 'Teletalk', mnc: '04' },
-  { name: 'Airtel (Robi)', mnc: '07' },
+  { name: 'Grameenphone (GP)', mnc: '01', logoUrl: 'https://placehold.co/120x40.png', logoHint: 'grameenphone logo' },
+  { name: 'Robi', mnc: '02', logoUrl: 'https://placehold.co/120x40.png', logoHint: 'robi logo' },
+  { name: 'Banglalink', mnc: '03', logoUrl: 'https://placehold.co/120x40.png', logoHint: 'banglalink logo' },
+  { name: 'Teletalk', mnc: '04', logoUrl: 'https://placehold.co/120x40.png', logoHint: 'teletalk logo' },
+  { name: 'Airtel (Robi)', mnc: '07', logoUrl: 'https://placehold.co/120x40.png', logoHint: 'airtel logo' },
 ];
 
 const formSchema = z.object({
@@ -83,6 +84,9 @@ export default function CellTowerLocatorForm() {
       setIsLoading(false);
     }
   };
+  
+  const selectedMnc = form.watch('mnc'); // Watch MNC value for reacting to changes
+  const selectedOperator = BANGLADESH_OPERATORS.find(op => op.mnc === selectedMnc);
 
   return (
     <Card className="w-full shadow-xl bg-card/80 border border-border/50">
@@ -195,7 +199,24 @@ export default function CellTowerLocatorForm() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm font-code">
-              <div className="flex items-center">
+              {selectedOperator && (
+                <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 p-3 bg-muted/20 rounded-md border border-border/20">
+                  <Image
+                    src={selectedOperator.logoUrl}
+                    alt={`${selectedOperator.name} logo`}
+                    width={100} 
+                    height={33} 
+                    className="rounded object-contain"
+                    data-ai-hint={selectedOperator.logoHint}
+                  />
+                  <div className="text-center sm:text-left">
+                    <p className="text-md font-semibold text-foreground">{selectedOperator.name}</p>
+                    <p className="text-xs text-muted-foreground">Selected Network Operator</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center pt-3">
                 <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
                 <strong>Latitude:</strong> <span className="ml-1 text-foreground">{result.latitude.toFixed(6)}</span>
               </div>
@@ -249,4 +270,4 @@ export default function CellTowerLocatorForm() {
     </Card>
   );
 }
-
+    
