@@ -2,13 +2,13 @@
 import type { PDLPersonSearchOutput, PDLMatchedPerson } from '@/ai/flows/pdl-person-search-flow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // AvatarImage removed as PDL doesn't send image URLs in search/enrich
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { 
-    Users, MapPin, Briefcase, GraduationCap, Link as LinkIcon, Mail, Phone, ExternalLink, AlertCircle,
+    User, MapPin, Briefcase, GraduationCap, Link as LinkIcon, Mail, Phone, ExternalLink, AlertCircle,
     BarChart3, GripVertical, Building, Info, Star, CheckCircle, Linkedin, Facebook, Twitter, GitMerge,
-    CalendarDays, Code2, UserCircle, UserCheck, ShieldQuestion
+    CalendarDays, Code2, UserCircle, UserCheck, ShieldQuestion, Users // Added Users for consistency
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -20,7 +20,7 @@ const getAvatarFallback = (name?: string) => {
   if (!name) return "P";
   const parts = name.split(" ");
   if (parts.length > 1) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return (parts[0][0] + (parts[parts.length - 1][0] || parts[0][1] || '')).toUpperCase();
   }
   return name.substring(0, 2).toUpperCase();
 };
@@ -38,32 +38,35 @@ const SocialIcon = ({ service }: { service?: string }) => {
 
 export default function ReportDisplay({ report }: ReportDisplayProps) {
   const hasMatches = report.matches && report.matches.length > 0;
-  const totalFound = report.totalMatches || 0;
+  const totalFound = report.totalMatches || 0; // Will be 0 or 1 with Enrich
 
   if (!hasMatches) {
     return (
       <Alert className="mt-8 shadow-md bg-card/80 border-border/50">
         <ShieldQuestion className="h-5 w-5 text-muted-foreground" />
-        <AlertTitle className="font-headline text-muted-foreground">Search Complete: No Direct Matches Found</AlertTitle>
+        <AlertTitle className="font-headline text-muted-foreground">Enrichment Complete: No Direct Match Found</AlertTitle>
         <AlertDescription className="font-code">
-          PeopleDataLabs did not return any direct matches for the provided criteria. 
-          {report.errorMessage && ` Error: ${report.errorMessage}`}
-          {totalFound > 0 && ` (PDL indicated ${totalFound} potential results initially, but none passed filtering or schema.)`}
+          PeopleDataLabs did not return a direct match for the provided criteria using the Enrich API.
+          {report.errorMessage && report.errorMessage !== "Person not found with the provided details." && ` Error: ${report.errorMessage}`}
         </AlertDescription>
       </Alert>
     );
   }
+
+  // Since Enrich returns at most one person, we can simplify the title logic.
+  const matchCountDisplay = totalFound > 0 ? `${totalFound} profile found` : "Profile details";
 
   return (
     <div className="mt-8 space-y-6">
       <Card className="shadow-lg bg-card/90 border-primary/20">
         <CardHeader>
           <CardTitle className="text-2xl font-headline text-primary flex items-center">
-            <Users className="mr-3 h-7 w-7" />
-            PDL Search Results ({report.matches.length} displayed / {totalFound} total potential)
+            <UserCheck className="mr-3 h-7 w-7" /> {/* Changed icon to reflect enrichment */}
+            PDL Enrichment Result 
+            {totalFound > 0 && <span className="text-lg ml-2 text-muted-foreground">({matchCountDisplay})</span>}
           </CardTitle>
           <CardDescription className="font-code text-muted-foreground">
-            Profiles sourced from PeopleDataLabs. Data accuracy may vary.
+            Profile sourced from PeopleDataLabs Enrich API. Data accuracy may vary.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -73,7 +76,6 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
           <CardHeader className="bg-secondary/10 p-4 border-b border-border/30">
             <div className="flex items-start sm:items-center space-x-4">
               <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-primary/30">
-                {/* PDL doesn't provide profile images directly in search. Use initials. */}
                 <AvatarFallback className="text-2xl bg-muted text-muted-foreground">{getAvatarFallback(person.fullName)}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -89,7 +91,7 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
                         {[person.locationLocality, person.locationRegion, person.locationCountry].filter(Boolean).join(', ')}
                     </p>
                 )}
-                 {person.likelihood !== undefined && (
+                 {person.likelihood !== undefined && ( // Likelihood might still be present in Enrich response
                     <Badge variant="outline" className="mt-2 text-xs border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400">
                         <Star className="h-3 w-3 mr-1.5 text-green-500" />
                         PDL Likelihood: {person.likelihood}/10
@@ -99,7 +101,7 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
             </div>
           </CardHeader>
           <CardContent className="p-4 md:p-6 space-y-4">
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible className="w-full" defaultValue="experience">
               {(person.experience && person.experience.length > 0) && (
                 <AccordionItem value="experience">
                   <AccordionTrigger className="text-base font-headline text-secondary-foreground hover:text-primary">
@@ -107,7 +109,7 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 space-y-3 pl-2">
                     {person.experience.map((exp, i) => (
-                      <div key={i} className="text-xs sm:text-sm p-2.5 bg-input/30 rounded-md border border-border/20">
+                      <div key={`exp-${i}`} className="text-xs sm:text-sm p-2.5 bg-input/30 rounded-md border border-border/20">
                         <p className="font-semibold text-foreground">{exp.title || "N/A"} at {exp.companyName || "N/A"}</p>
                         {(exp.startDate || exp.endDate) && <p className="text-muted-foreground"><CalendarDays className="inline h-3.5 w-3.5 mr-1"/> {exp.startDate || '?'} - {exp.endDate || 'Present'}</p>}
                         {exp.location && <p className="text-muted-foreground"><MapPin className="inline h-3.5 w-3.5 mr-1"/> {exp.location}</p>}
@@ -124,7 +126,7 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 space-y-3 pl-2">
                     {person.education.map((edu, i) => (
-                      <div key={i} className="text-xs sm:text-sm p-2.5 bg-input/30 rounded-md border border-border/20">
+                      <div key={`edu-${i}`} className="text-xs sm:text-sm p-2.5 bg-input/30 rounded-md border border-border/20">
                         <p className="font-semibold text-foreground">{edu.schoolName || "N/A"}</p>
                         {edu.degrees && edu.degrees.length > 0 && <p className="text-muted-foreground">Degree(s): {edu.degrees.join(', ')}</p>}
                         {edu.endDate && <p className="text-muted-foreground"><CalendarDays className="inline h-3.5 w-3.5 mr-1"/> Ended: {edu.endDate}</p>}
@@ -142,7 +144,7 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
                   <AccordionContent className="pt-2 pl-2">
                     <div className="flex flex-wrap gap-2">
                       {person.skills.map((skill, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs sm:text-sm bg-muted/60 text-muted-foreground hover:bg-muted">
+                        <Badge key={`skill-${i}`} variant="secondary" className="text-xs sm:text-sm bg-muted/60 text-muted-foreground hover:bg-muted">
                           {skill}
                         </Badge>
                       ))}
@@ -167,10 +169,10 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
                     )}
                     {person.socialProfiles?.filter(p => p.url && p.url !== person.linkedinUrl).map((profile, i) => (
                       profile.url && (
-                        <div key={i} className="flex items-center text-xs sm:text-sm p-2.5 bg-input/30 rounded-md border border-border/20">
+                        <div key={`social-${i}`} className="flex items-center text-xs sm:text-sm p-2.5 bg-input/30 rounded-md border border-border/20">
                           <SocialIcon service={profile.service} />
                           <a href={profile.url} target="_blank" rel="noopener noreferrer" className="ml-2 text-primary hover:underline break-all">
-                            {profile.url}
+                            {profile.url} {(profile.service && profile.service !== 'linkedin' && profile.service !== 'facebook' && profile.service !== 'twitter' && profile.service !== 'github') ? `(${profile.service})` : ''}
                           </a>
                         </div>
                       )
@@ -208,19 +210,21 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
                   </AccordionContent>
                 </AccordionItem>
               )}
+               <AccordionItem value="raw-data">
+                  <AccordionTrigger className="text-base font-headline text-secondary-foreground hover:text-primary">
+                    <GitMerge className="mr-2 h-5 w-5 text-primary/80" /> Raw PDL Data
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2 pl-2">
+                    <pre className="text-xs bg-muted/30 p-3 rounded-md overflow-x-auto border border-border/20">
+                      {JSON.stringify(person, null, 2)}
+                    </pre>
+                  </AccordionContent>
+                </AccordionItem>
             </Accordion>
           </CardContent>
         </Card>
       ))}
-       {report.matches.length === 0 && report.totalMatches && report.totalMatches > 0 && (
-         <Alert className="mt-6 shadow-sm bg-card/70 border-border/40">
-            <ShieldQuestion className="h-5 w-5 text-muted-foreground" />
-            <AlertTitle className="font-headline text-muted-foreground">Refined Search</AlertTitle>
-            <AlertDescription className="font-code">
-                PDL indicated {report.totalMatches} potential results, but none matched the filtering criteria precisely or details were too sparse to display. Consider broadening your search terms or trying different city variations.
-            </AlertDescription>
-        </Alert>
-      )}
     </div>
   );
 }
+
