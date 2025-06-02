@@ -7,6 +7,7 @@ const UNWIREDLABS_API_URL = 'https://us1.unwiredlabs.com/v2/process.php';
 interface UnwiredLabsCell {
   lac: number;
   cid: number;
+  psc?: number; // Primary Scrambling Code, optional
 }
 
 interface UnwiredLabsRequestParams {
@@ -24,7 +25,7 @@ interface UnwiredLabsSuccessResponse {
   lat: number;
   lon: number;
   accuracy: number; // in meters
-  address?: string;
+  address?: string; // Added optional address field
   // There might be other fields depending on the request
 }
 
@@ -40,6 +41,7 @@ export interface CellTowerLocation {
   latitude: number;
   longitude: number;
   accuracy: number;
+  address?: string; // Added optional address field
   googleMapsUrl: string;
 }
 
@@ -49,10 +51,10 @@ export async function fetchCellTowerLocation(
   mnc: number,
   lac: number,
   cellId: number,
-  radioType: 'gsm' | 'umts' | 'lte' | 'cdma' = 'gsm'
+  radioType: 'gsm' | 'umts' | 'lte' | 'cdma' = 'lte' // Default to 'lte'
 ): Promise<CellTowerLocation | { error: string }> {
-  if (!apiKey || apiKey === 'your_unwired_labs_api_key_here') {
-    return { error: 'Unwired Labs API key is not configured. Please set UNWIREDLABS_API_KEY in your .env file.' };
+  if (!apiKey || apiKey === 'your_unwired_labs_api_key_here' || apiKey === 'pk.4da7f32fbfa2798c6fda0ce376a1e050') {
+    return { error: 'Unwired Labs API key is not configured or is invalid. Please set a valid UNWIREDLABS_API_KEY in your .env file.' };
   }
 
   const cellsPayload = JSON.stringify([{ lac, cid: cellId }]);
@@ -62,7 +64,7 @@ export async function fetchCellTowerLocation(
     mcc: mcc.toString(),
     mnc: mnc.toString(),
     cells: cellsPayload,
-    address: '0', // We don't need reverse geocoding for this feature
+    address: '1', // Request address information
   });
 
   try {
@@ -85,6 +87,7 @@ export async function fetchCellTowerLocation(
         latitude: successData.lat,
         longitude: successData.lon,
         accuracy: successData.accuracy,
+        address: successData.address, // Include address in the result
         googleMapsUrl: `https://www.google.com/maps?q=${successData.lat},${successData.lon}`,
       };
     } else {
@@ -103,3 +106,4 @@ export async function fetchCellTowerLocation(
     return { error: 'An unexpected network error occurred.' };
   }
 }
+

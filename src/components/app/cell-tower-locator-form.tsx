@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle } from 'lucide-react';
+import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home } from 'lucide-react';
 import { locateCellTower, type CellTowerLocatorInput } from '@/app/actions';
 import type { CellTowerLocation } from '@/services/unwiredlabs';
 
@@ -81,7 +81,7 @@ export default function CellTowerLocatorForm() {
         </CardTitle>
         <CardDescription>
           Find approximate location of a cell tower using its LAC and Cell ID.
-          Requires an Unwired Labs API key in your <code>.env</code> file.
+          Requires an Unwired Labs API key in your <code>.env</code> file. Default radio type is LTE.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -196,6 +196,12 @@ export default function CellTowerLocatorForm() {
                 <RadioTower className="mr-2 h-4 w-4 text-muted-foreground" />
                 <strong>Accuracy:</strong> <span className="ml-1">{result.accuracy} meters</span>
               </div>
+              {result.address && (
+                <div className="flex items-start">
+                  <Home className="mr-2 h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                  <strong>Address:</strong> <span className="ml-1 break-all">{result.address}</span>
+                </div>
+              )}
               <div className="flex items-center">
                 <LinkIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                 <strong>Google Maps:</strong>
@@ -215,3 +221,4 @@ export default function CellTowerLocatorForm() {
     </Card>
   );
 }
+
