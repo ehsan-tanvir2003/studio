@@ -2,39 +2,48 @@
 // src/app/actions.ts
 "use server";
 
-import { generatePersonProfile, type PersonProfileOutput, type PersonProfileInput } from '@/ai/flows/person-profile-builder-flow';
+import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { fetchCellTowerLocation, type CellTowerLocation } from '@/services/unwiredlabs';
 import * as z from 'zod';
 
-// --- AI Person Profile Synthesizer ---
-const personProfileSchema = z.object({
+// --- PeopleDataLabs Person Search ---
+const pdlPersonSearchSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters long.").max(100, "Full name is too long."),
-  locationHint: z.string().min(2, "Location hint must be at least 2 characters long.").max(100, "Location hint is too long."),
+  location: z.string().min(2, "Location must be at least 2 characters long.").max(100, "Location hint is too long."),
+  size: z.number().optional().default(10),
 });
 
-export async function generateAiPersonProfile(
+export async function searchPdlProfiles(
   fullName: string, 
-  locationHint: string
-): Promise<PersonProfileOutput | { error: string }> {
-  const validationResult = personProfileSchema.safeParse({ fullName, locationHint });
+  location: string,
+  size?: number
+): Promise<PdlPersonSearchOutput> { // Return type directly from flow
+  const validationResult = pdlPersonSearchSchema.safeParse({ fullName, location, size });
   if (!validationResult.success) {
-    return { error: validationResult.error.errors.map(e => e.message).join(', ') };
+    // Construct an error object similar to PdlPersonSearchOutput
+    return { 
+      matches: [], 
+      totalMatches: 0,
+      error: validationResult.error.errors.map(e => e.message).join(', ') 
+    };
   }
 
-  const input: PersonProfileInput = validationResult.data;
+  const input: PdlPersonSearchInput = validationResult.data;
 
   try {
-    const result = await generatePersonProfile(input);
-    return result; // The flow itself will throw if output is null
+    const result = await searchPdlPersonProfiles(input);
+    return result;
   } catch (error) {
-    console.error("Error in generatePersonProfile AI flow:", error);
-    if (error instanceof Error) {
-        if (error.message.includes("503") || error.message.toLowerCase().includes("model is overloaded") || error.message.toLowerCase().includes("service unavailable")) {
-            return { error: "The AI service is temporarily busy or unavailable. Please try again in a few moments." };
+    console.error("Error in searchPdlPersonProfiles flow:", error);
+    let errorMessage = "An unexpected error occurred during PDL profile search.";
+     if (error instanceof Error) {
+        if (error.message.includes("503") || error.message.toLowerCase().includes("overloaded") || error.message.toLowerCase().includes("service unavailable")) {
+            errorMessage = "The PDL service is temporarily busy or unavailable. Please try again in a few moments.";
+        } else {
+            errorMessage = `PDL search failed: ${error.message}`;
         }
-        return { error: `AI profile generation failed: ${error.message}` };
     }
-    return { error: "An unexpected error occurred during AI profile generation." };
+    return { matches: [], totalMatches: 0, error: errorMessage };
   }
 }
 

@@ -1,12 +1,12 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, BrainCircuit } from 'lucide-react'; // Changed ScanEye to BrainCircuit
+import { ArrowRight, RadioTower, Binary, Search } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Intel Tools Hub | OSINT Toolkit',
-  description: 'Central hub for accessing various OSINT tools like AI Profile Synthesizer and Cell Locator.',
+  description: 'Central hub for accessing various OSINT tools like PDL People Search and Cell Locator.',
 };
 
 export default function HubPage() {
@@ -22,22 +22,22 @@ export default function HubPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
-        <Link href="/info-sleuth" passHref> {/* Route will be renamed by file system if layout is renamed */}
+        <Link href="/info-sleuth" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-primary/30 hover:border-primary/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-primary/30 transform hover:scale-105 cursor-pointer">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-3xl font-headline text-primary flex items-center">
-                  <BrainCircuit className="mr-3 h-8 w-8" /> {/* Changed Icon */}
-                  AI Profile Synthesizer
+                  <Search className="mr-3 h-8 w-8" /> 
+                  InfoSleuth - PDL Search
                 </CardTitle>
                 <ArrowRight className="h-7 w-7 text-primary" />
               </div>
               <CardDescription className="font-code text-muted-foreground pt-2">
-                Generate a detailed, AI-synthesized illustrative OSINT profile based on a name and location. Explore potential characteristics and digital footprints.
+                Leverage PeopleDataLabs to search for professional profiles based on name and location.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-accent font-code">Synthesize Profile &gt;</p>
+              <p className="text-sm text-accent font-code">Initiate Search &gt;</p>
             </CardContent>
           </Card>
         </Link>

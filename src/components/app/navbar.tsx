@@ -3,12 +3,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, BrainCircuit } from 'lucide-react'; // Added BrainCircuit, removed ScanEye
+import { Home, RadioTower, Binary, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
-  { href: '/info-sleuth', label: 'AI Synthesizer', icon: BrainCircuit }, // Updated label and icon
+  { href: '/info-sleuth', label: 'InfoSleuth', icon: Search }, 
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
 ];
 
@@ -25,7 +25,7 @@ export default function Navbar() {
           </Link>
           <div className="flex items-center space-x-2 sm:space-x-4">
             {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.href === '/info-sleuth' && pathname.startsWith('/ai-profile-synth')); // Adjust for potential route name change
+              const isActive = pathname === item.href || (item.href === '/info-sleuth' && pathname.startsWith('/info-sleuth'));
               return (
                 <Link
                   key={item.href}

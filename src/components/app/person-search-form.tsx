@@ -7,21 +7,21 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { UserCog, Loader2, Search, MapPinIcon, BrainCircuit } from 'lucide-react'; // Changed UserSearch to UserCog or BrainCircuit
+import { UserCog, Loader2, Search, MapPinIcon } from 'lucide-react';
 
 const formSchema = z.object({
   fullName: z.string()
     .min(3, "Full name must be at least 3 characters.")
     .max(100, "Full name seems too long."),
-  locationHint: z.string() // Changed from city to locationHint
-    .min(2, "Location hint must be at least 2 characters.")
-    .max(100, "Location hint seems too long."),
+  location: z.string() 
+    .min(2, "Location must be at least 2 characters.")
+    .max(100, "Location seems too long."),
 });
 
-type PersonProfileFormValues = z.infer<typeof formSchema>; // Renamed for clarity
+type PdlSearchFormValues = z.infer<typeof formSchema>;
 
 interface PersonSearchFormProps {
-  onSubmit: (fullName: string, locationHint: string) => Promise<void>;
+  onSubmit: (fullName: string, location: string) => Promise<void>;
   isLoading: boolean;
   formTitle?: string;
   fullNameLabel?: string;
@@ -37,27 +37,27 @@ interface PersonSearchFormProps {
 export default function PersonSearchForm({ 
   onSubmit, 
   isLoading,
-  formTitle = "Initiate Search",
-  fullNameLabel = "Person's Full Name",
-  fullNamePlaceholder = "[Enter Full Name to Search]",
-  fullNameDescription = "Provide the full name of the person you are searching for.",
-  locationLabel = "Person's City / Region",
-  locationPlaceholder = "[Enter City/Region e.g., Dhaka]",
-  locationDescription = "Specify the person's city or general region to refine the search.",
-  buttonText = "[Initiate Search]",
-  loadingButtonText = "Searching Intel Database..."
+  formTitle = "PDL Search Parameters",
+  fullNameLabel = "Target Full Name",
+  fullNamePlaceholder = "[Enter Full Name to Search PDL]",
+  fullNameDescription = "Provide the full name for the PDL search.",
+  locationLabel = "Location (City/Region/Country)",
+  locationPlaceholder = "[e.g., Dhaka, London, or Bangladesh]",
+  locationDescription = "Specify a location to refine the PDL search.",
+  buttonText = "Search PDL",
+  loadingButtonText = "Searching PDL Database..."
 }: PersonSearchFormProps) {
-  const form = useForm<PersonProfileFormValues>({ // Use renamed type
+  const form = useForm<PdlSearchFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: '',
-      locationHint: '', // Changed from city
+      location: '', 
     },
     mode: "onChange"
   });
 
-  const handleSubmit = (values: PersonProfileFormValues) => {
-    onSubmit(values.fullName, values.locationHint); // Pass locationHint
+  const handleSubmit = (values: PdlSearchFormValues) => {
+    onSubmit(values.fullName, values.location);
   };
 
   return (
@@ -89,7 +89,7 @@ export default function PersonSearchForm({
         />
         <FormField
           control={form.control}
-          name="locationHint" 
+          name="location" 
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-lg font-headline text-primary flex items-center">
@@ -119,7 +119,7 @@ export default function PersonSearchForm({
             </>
           ) : (
             <>
-              <BrainCircuit className="mr-2 h-5 w-5" /> {/* Or Search icon if preferred */}
+              <Search className="mr-2 h-5 w-5" />
               {buttonText}
             </>
           )}
