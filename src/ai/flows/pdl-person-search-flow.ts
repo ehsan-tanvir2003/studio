@@ -95,7 +95,6 @@ const pdlPersonSearchFlow = ai.defineFlow(
                 { "match": { "last_name": nameParts[0] } },
                 { "match_phrase": { "full_name": input.fullName } }
               ]
-              // "minimum_should_match": 1 // Removed
             }
           });
         } else {
@@ -112,7 +111,6 @@ const pdlPersonSearchFlow = ai.defineFlow(
                 },
                 { "match_phrase": { "full_name": input.fullName } }
               ]
-              // "minimum_should_match": 1 // Removed
             }
           });
         }
@@ -129,7 +127,6 @@ const pdlPersonSearchFlow = ai.defineFlow(
               { "match": { "location_country": locationTerm } },
               { "match_phrase": { "location_name": locationTerm } }
             ]
-            // "minimum_should_match": 1 // Removed
           }
         });
       } else {
@@ -199,9 +196,11 @@ const pdlPersonSearchFlow = ai.defineFlow(
           locationLocality: pdlPerson.location_locality,
           locationRegion: pdlPerson.location_region,
           locationCountry: pdlPerson.location_country,
-          phoneNumbers: pdlPerson.phone_numbers,
-          emails: pdlPerson.emails?.map((e: any) => ({ address: e.address, type: e.type })) || [],
-          skills: pdlPerson.skills,
+          phoneNumbers: pdlPerson.phone_numbers, // Assumes phone_numbers is always an array or null/undefined
+          emails: Array.isArray(pdlPerson.emails) 
+            ? pdlPerson.emails.map((e: any) => ({ address: e.address, type: e.type || null })) 
+            : [],
+          skills: pdlPerson.skills, // Assumes skills is always an array or null/undefined
           summary: pdlPerson.summary,
           likelihood: pdlPerson.likelihood,
           dataset_version: pdlPerson.dataset_version,
@@ -231,3 +230,4 @@ const pdlPersonSearchFlow = ai.defineFlow(
     }
   }
 );
+
