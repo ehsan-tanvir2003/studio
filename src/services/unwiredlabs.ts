@@ -4,28 +4,28 @@
 
 const UNWIREDLABS_API_URL = 'https://us1.unwiredlabs.com/v2/process.php';
 
-interface UnwiredLabsCell {
-  lac: number;
-  cid: number;
-  psc?: number; // Primary Scrambling Code, optional
-}
+// This interface was for the POST request body, not strictly needed for GET but good for reference.
+// interface UnwiredLabsRequestBody {
+//   token: string;
+//   radio: 'gsm' | 'umts' | 'lte' | 'cdma';
+//   mcc: number;
+//   mnc: number;
+//   cells: UnwiredLabsCell[];
+//   address: 0 | 1; 
+// }
 
-// This interface defines the expected structure for the POST request body
-interface UnwiredLabsRequestBody {
-  token: string;
-  radio: 'gsm' | 'umts' | 'lte' | 'cdma';
-  mcc: number;
-  mnc: number;
-  cells: UnwiredLabsCell[];
-  address: 0 | 1; // 0 for no address, 1 for address
-}
+// interface UnwiredLabsCell {
+//   lac: number;
+//   cid: number;
+//   psc?: number;
+// }
 
 interface UnwiredLabsSuccessResponse {
   status: 'ok';
-  balance: number; // Can also be balance_lac, balance_cell etc.
+  balance: number; 
   lat: number;
   lon: number;
-  accuracy: number; // in meters
+  accuracy: number; 
   address?: string;
 }
 
@@ -57,33 +57,28 @@ export async function fetchCellTowerLocation(
     return { error: 'Unwired Labs API key is not configured. Please set a valid UNWIREDLABS_API_KEY in your .env file.' };
   }
 
-  const requestBody: UnwiredLabsRequestBody = {
+  const params = new URLSearchParams({
     token: apiKey,
     radio: radioType,
-    mcc: mcc,
-    mnc: mnc,
-    cells: [{
-      lac: lac,
-      cid: cellId
-      // psc: 0 // We can add psc input later if needed
-    }],
-    address: 1, // Request address details
-  };
+    mcc: mcc.toString(),
+    mnc: mnc.toString(),
+    lac: lac.toString(),
+    cid: cellId.toString(),
+    address: '1', // Request address details
+  });
+
+  const requestUrl = `${UNWIREDLABS_API_URL}?${params.toString()}`;
 
   try {
-    const response = await fetch(UNWIREDLABS_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+    const response = await fetch(requestUrl, {
+      method: 'GET',
     });
 
     if (!response.ok) {
       try {
         const errorData: UnwiredLabsErrorResponse = await response.json();
-        if (errorData.message && errorData.message.toLowerCase().includes('invalid request')) {
-          return { error: `API Error: Invalid request (Status: ${response.status}). This indicates an issue with the request format or parameters sent to Unwired Labs. Please check API documentation or key permissions.` };
+         if (errorData.message && errorData.message.toLowerCase().includes('invalid request')) {
+          return { error: `API Error: Invalid request (Status: ${response.status}) with GET. This could be due to incorrect parameters, or the API key requiring a different request format, endpoint, or permissions. URL: ${requestUrl}` };
         }
         return { error: `API Error: ${errorData.message || response.statusText} (Status: ${response.status})` };
       } catch (e) {
@@ -107,8 +102,8 @@ export async function fetchCellTowerLocation(
       if (errorData.message && errorData.message.toLowerCase().includes('no matches found')) {
         return { error: 'No location data found for the provided Cell ID and LAC with the selected operator.' };
       }
-      if (errorData.message && errorData.message.toLowerCase().includes('invalid request')) {
-          return { error: `API Error: Invalid request. This could be due to incorrect parameters, or the API key requiring a different request format, endpoint, or permissions.` };
+       if (errorData.message && errorData.message.toLowerCase().includes('invalid request')) { // Should be caught by !response.ok ideally
+          return { error: `API Error: Invalid request. This could be due to incorrect parameters, or the API key requiring a different request format, endpoint, or permissions. Used GET to ${requestUrl}` };
       }
       return { error: `API Error: ${errorData.message || 'Unknown error from Unwired Labs'}` };
     }
