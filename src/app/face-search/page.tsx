@@ -1,87 +1,43 @@
 
 "use client";
 
-import { useState } from 'react';
-import FaceUploadForm from '@/components/app/face-upload-form';
-import FaceCheckResultsDisplay from '@/components/app/face-check-results-display';
-import type { FaceCheckOutput } from '@/ai/flows/face-check-flow';
-import { searchWithFaceCheckApi } from '@/app/actions';
+import { Camera, ExternalLink, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Camera, Users, Loader2, Terminal } from "lucide-react";
+import Link from "next/link";
 
 export default function FaceSearchPage() {
-  const [results, setResults] = useState<FaceCheckOutput | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchedImage, setSearchedImage] = useState<string | null>(null);
-
-  const handleSearch = async (imageDataUri: string) => {
-    setIsLoading(true);
-    setResults(null);
-    setError(null);
-    setSearchedImage(imageDataUri); 
-
-    try {
-      const response = await searchWithFaceCheckApi(imageDataUri);
-      if (!response.success) {
-        // Prioritize specific error from flow if present, then API message, then generic
-        const displayError = response.error || response.message || "FaceCheck.ID search failed. Please check the logs.";
-        setError(displayError);
-        setResults(null); // Ensure no old results are shown on error
-      } else {
-        setResults(response);
-      }
-    } catch (e) {
-      setError("An unexpected error occurred while initiating the FaceCheck.ID search.");
-      console.error(e);
-      setResults(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-full flex flex-col items-center py-8 px-4">
       <header className="mb-10 sm:mb-12 text-center">
         <Camera className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Face Recognition Search</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          Upload an image to search for faces using FaceCheck.ID
+          Access FaceCheck.ID for reverse image search
         </p>
       </header>
 
-      <main className="w-full max-w-2xl space-y-12">
-        <div>
-          <FaceUploadForm 
-            onSubmit={handleSearch} 
-            isLoading={isLoading}
-          />
-          
-          {isLoading && (
-            <div className="mt-8 text-center py-10 bg-card/50 rounded-lg shadow-md border border-primary/30">
-              <div role="status" className="flex flex-col items-center space-y-4">
-                <Loader2 className="w-12 h-12 text-primary animate-spin"/>
-                <p className="text-lg text-primary font-code font-medium">
-                  [PROCESSING_IMAGE_AND_QUERYING_FACECHECK.ID...]
-                </p>
-                {searchedImage && (
-                  <Image src={searchedImage} alt="Uploaded for search" width={100} height={100} className="mt-2 rounded-md object-cover" data-ai-hint="uploaded face"/>
-                )}
-              </div>
-            </div>
-          )}
+      <main className="w-full max-w-xl text-center space-y-8">
+        <Alert variant="default" className="bg-card/80 border-primary/30 text-left">
+          <AlertTriangle className="h-5 w-5 text-primary" />
+          <AlertTitle className="font-headline text-primary">Direct Embedding Not Available</AlertTitle>
+          <AlertDescription className="font-code text-muted-foreground">
+            FaceCheck.ID does not allow its website to be embedded directly on other sites for security reasons.
+            To use their face search tool, please visit their website by clicking the button below.
+          </AlertDescription>
+        </Alert>
 
-          {error && !isLoading && (
-            <Alert variant="destructive" className="mt-6 shadow-md border-destructive/70 bg-destructive/10">
-              <Terminal className="h-5 w-5 text-destructive" />
-              <AlertTitle className="font-headline text-destructive">Search Error</AlertTitle>
-              <AlertDescription className="font-code text-destructive/90">
-                {error}
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {results && !isLoading && <FaceCheckResultsDisplay results={results} searchedImage={searchedImage}/>}
+        <Link href="https://facecheck.id/" target="_blank" rel="noopener noreferrer" passHref>
+          <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-code text-lg py-6 px-8 shadow-lg hover:shadow-primary/40 transition-all duration-300 ease-in-out transform hover:scale-105">
+            <ExternalLink className="mr-2 h-5 w-5" />
+            Go to FaceCheck.ID
+          </Button>
+        </Link>
+        
+        <div className="mt-8 p-4 border border-dashed border-muted-foreground/30 rounded-lg bg-card/50">
+            <p className="text-sm font-code text-muted-foreground">
+                FaceCheck.ID is a third-party service. Please ensure you use it responsibly and in accordance with their terms of service.
+            </p>
         </div>
       </main>
     </div>
