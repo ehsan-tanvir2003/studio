@@ -3,8 +3,8 @@
 "use server";
 
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
-import { searchFaceWithFaceCheck, type FaceCheckInput, type FaceCheckOutput } from '@/ai/flows/face-check-flow';
-import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs'; // Updated import
+import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow';
+import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -47,17 +47,17 @@ export async function searchPdlProfiles(
   }
 }
 
-// --- FaceCheck.ID Search ---
-// This action is currently not used as FaceSearch page directly links/embeds FaceCheck.ID website.
-// Keeping it here for potential future API integration.
-const faceCheckSearchSchema = z.object({
+// --- RapidAPI Reverse Image Search ---
+const rapidApiSearchSchema = z.object({
   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
+  apiEndpointUrl: z.string().url( { message: "A valid RapidAPI endpoint URL is required." }),
 });
 
-export async function searchWithFaceCheckApi(
-  imageDataUri: string
-): Promise<FaceCheckOutput> {
-  const validationResult = faceCheckSearchSchema.safeParse({ imageDataUri });
+export async function searchWithRapidApi(
+  imageDataUri: string,
+  apiEndpointUrl: string
+): Promise<RapidApiImageSearchOutput> {
+  const validationResult = rapidApiSearchSchema.safeParse({ imageDataUri, apiEndpointUrl });
   if (!validationResult.success) {
     return {
       success: false,
@@ -65,16 +65,16 @@ export async function searchWithFaceCheckApi(
     };
   }
 
-  const input: FaceCheckInput = validationResult.data;
+  const input: RapidApiImageSearchInput = validationResult.data;
 
   try {
-    const result = await searchFaceWithFaceCheck(input);
+    const result = await searchImageWithRapidApi(input);
     return result;
   } catch (error) {
-    console.error("Error in searchFaceWithFaceCheck flow:", error);
-    let errorMessage = "An unexpected error occurred during FaceCheck.ID search.";
+    console.error("Error in searchImageWithRapidApi flow:", error);
+    let errorMessage = "An unexpected error occurred during RapidAPI image search.";
     if (error instanceof Error) {
-      errorMessage = `FaceCheck search failed: ${error.message}`;
+      errorMessage = `RapidAPI search failed: ${error.message}`;
     }
     return { success: false, error: errorMessage };
   }
@@ -87,12 +87,11 @@ const BANGLADESH_MCC = 470;
 const cellTowerLocatorSchema = z.object({
   lac: z.coerce.number().int().positive("LAC must be a positive integer."),
   cellId: z.coerce.number().int().positive("Cell ID must be a positive integer."),
-  mnc: z.string().min(1, "Operator selection is required."), // mnc from form is string
+  mnc: z.string().min(1, "Operator selection is required."), 
 });
 
 export type CellTowerLocatorInput = z.infer<typeof cellTowerLocatorSchema>;
 
-// Define the return type for the locateCellTower action
 export type CellTowerLocationResult = CellTowerLocation | { error: string };
 
 export async function locateCellTower(
@@ -104,9 +103,9 @@ export async function locateCellTower(
   }
 
   const { lac, cellId, mnc: mncString } = validationResult.data;
-  const apiKey = process.env.UNWIREDLABS_API_KEY; // Changed to UNWIREDLABS_API_KEY
+  const apiKey = process.env.UNWIREDLABS_API_KEY; 
 
-  if (!apiKey || apiKey === "YOUR_UNWIREDLABS_API_KEY_HERE" || apiKey.trim() === "") { // Updated placeholder check
+  if (!apiKey || apiKey === "YOUR_UNWIREDLABS_API_KEY_HERE" || apiKey.trim() === "") { 
     console.error("UNWIREDLABS_API_KEY is not set or is a placeholder in .env file");
     return { error: "Service configuration error: Unwired Labs API key missing or invalid." };
   }
@@ -116,7 +115,5 @@ export async function locateCellTower(
       return { error: "Invalid operator MNC."}
   }
 
-  // Call the Unwired Labs service function
-  // Assuming 'gsm' as default radio type for now. This could be made configurable.
   return fetchCellTowerLocationFromUnwiredLabs(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId, 'gsm');
 }

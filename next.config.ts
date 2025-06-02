@@ -23,20 +23,15 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/maps/api/streetview/**',
       },
-      // Added for FaceCheck.ID thumbnails - adjust if their CDN hostnames vary
-      {
-        protocol: 'https',
-        hostname: 'facecheck.id', 
-        port: '',
-        pathname: '/**', 
-      },
-       {
-        protocol: 'https',
-        hostname: 'cdn.facecheck.id', // Common CDN pattern
-        port: '',
-        pathname: '/**',
-      },
-      // Add other potential hostnames if FaceCheck.ID uses multiple for thumbnails
+      // Add other potential hostnames if your chosen RapidAPI service
+      // returns image thumbnails from specific domains.
+      // Example:
+      // {
+      //   protocol: 'https',
+      //   hostname: 'some-cdn.rapidapi.com', 
+      //   port: '',
+      //   pathname: '/**', 
+      // },
     ],
   },
 };
