@@ -13,9 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle, Camera } from 'lucide-react';
-import { locateCellTower, type CellTowerLocatorInput, type CellTowerLocationResult } from '@/app/actions'; // Updated import for result type
-// CellTowerLocationFromOpenCellID is the success type within CellTowerLocationResult
-import type { CellTowerLocationFromOpenCellID } from '@/services/opencellid';
+import { locateCellTower, type CellTowerLocatorInput, type CellTowerLocationResult } from '@/app/actions';
+import type { CellTowerLocation } from '@/services/unwiredlabs'; // Updated import for result type
 
 
 const BANGLADESH_OPERATORS = [
@@ -39,7 +38,7 @@ function getZoomLevel(accuracy: number): number {
   if (accuracy <= 100) return 18;
   if (accuracy <= 250) return 17;
   if (accuracy <= 500) return 16;
-  if (accuracy <= 1000) return 15; // OpenCellID 'range' can be this
+  if (accuracy <= 1000) return 15; 
   if (accuracy <= 2500) return 14;
   if (accuracy <= 5000) return 13;
   if (accuracy <= 10000) return 12;
@@ -47,7 +46,7 @@ function getZoomLevel(accuracy: number): number {
 }
 
 export default function CellTowerLocatorForm() {
-  const [result, setResult] = useState<CellTowerLocationFromOpenCellID | null>(null); // Store only success data
+  const [result, setResult] = useState<CellTowerLocation | null>(null); 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [streetViewApiKey, setStreetViewApiKey] = useState<string | null>(null);
@@ -95,7 +94,7 @@ export default function CellTowerLocatorForm() {
         setError(response.error);
         setResult(null);
       } else {
-        setResult(response); // response is CellTowerLocationFromOpenCellID here
+        setResult(response); 
         setError(null);
       }
     } catch (e) {
@@ -118,7 +117,7 @@ export default function CellTowerLocatorForm() {
           Tower Signal Parameters
         </CardTitle>
         <CardDescription className="font-code text-muted-foreground/80">
-          Input LAC, Cell ID, and Operator MNC to triangulate tower position using OpenCellID data.
+          Input LAC, Cell ID, and Operator MNC to triangulate tower position using Unwired Labs data.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -197,7 +196,7 @@ export default function CellTowerLocatorForm() {
             <div role="status" className="flex flex-col items-center">
               <Loader2 className="w-8 h-8 text-muted-foreground animate-spin fill-accent" />
               <p className="mt-3 text-md text-muted-foreground font-code font-medium">
-                [Querying OpenCellID API // Standby...]
+                [Querying Unwired Labs API // Standby...]
               </p>
             </div>
           </div>
@@ -217,8 +216,13 @@ export default function CellTowerLocatorForm() {
           <Card className="mt-6 bg-card/50 shadow-lg border border-border/30">
             <CardHeader>
               <CardTitle className="text-xl font-headline text-accent flex items-center">
-                <CheckCircle className="mr-2 h-6 w-6 text-green-400" /> Location Data Acquired (via OpenCellID)
+                <CheckCircle className="mr-2 h-6 w-6 text-green-400" /> Location Data Acquired (via Unwired Labs)
               </CardTitle>
+               {result.balance !== undefined && (
+                <CardDescription className="text-xs font-code text-muted-foreground/70">
+                  Unwired Labs Balance: {result.balance} requests remaining.
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent className="space-y-4 text-sm font-code">
               {selectedOperator && (
@@ -249,18 +253,17 @@ export default function CellTowerLocatorForm() {
                 </div>
                 <div className="flex items-center">
                   <RadioTower className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <strong>Accuracy (Range):</strong> <span className="ml-1 text-foreground">{result.accuracy} meters</span>
+                  <strong>Accuracy:</strong> <span className="ml-1 text-foreground">{result.accuracy} meters</span>
                 </div>
               </div>
               
-              {/* Address is not available from OpenCellID directly
               {result.address && (
                 <div className="flex items-start">
                   <Home className="mr-2 h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <strong>Address:</strong> <span className="ml-1 break-all text-foreground">{result.address}</span>
                 </div>
               )}
-              */}
+              
               <div className="flex items-center">
                 <LinkIcon className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <strong>Google Maps:</strong>
@@ -288,7 +291,7 @@ export default function CellTowerLocatorForm() {
                  <div className="flex items-start text-xs text-muted-foreground/90 mt-2 p-2 bg-muted/30 rounded-md border border-border/20">
                   <AlertCircle className="mr-2 h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
                   <span>
-                    The tower's approximate location is marked. It is estimated to be within a <strong>{result.accuracy} meter radius (range)</strong> of this point. The map zoom level has been adjusted to reflect this accuracy. Data from OpenCellID.
+                    The tower's approximate location is marked. It is estimated to be within a <strong>{result.accuracy} meter radius</strong> of this point. The map zoom level has been adjusted to reflect this accuracy. Data from Unwired Labs.
                   </span>
                 </div>
               </div>

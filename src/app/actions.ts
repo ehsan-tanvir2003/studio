@@ -4,7 +4,7 @@
 
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { searchFaceWithFaceCheck, type FaceCheckInput, type FaceCheckOutput } from '@/ai/flows/face-check-flow';
-import { fetchCellTowerLocationFromOpenCellID, type CellTowerLocationFromOpenCellID } from '@/services/opencellid'; // Updated import
+import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs'; // Updated import
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -81,7 +81,7 @@ export async function searchWithFaceCheckApi(
 }
 
 
-// --- Cell Tower Locator (using OpenCellID) ---
+// --- Cell Tower Locator (using Unwired Labs) ---
 const BANGLADESH_MCC = 470; 
 
 const cellTowerLocatorSchema = z.object({
@@ -93,7 +93,7 @@ const cellTowerLocatorSchema = z.object({
 export type CellTowerLocatorInput = z.infer<typeof cellTowerLocatorSchema>;
 
 // Define the return type for the locateCellTower action
-export type CellTowerLocationResult = CellTowerLocationFromOpenCellID | { error: string };
+export type CellTowerLocationResult = CellTowerLocation | { error: string };
 
 export async function locateCellTower(
   input: CellTowerLocatorInput
@@ -104,11 +104,11 @@ export async function locateCellTower(
   }
 
   const { lac, cellId, mnc: mncString } = validationResult.data;
-  const apiKey = process.env.OPENCELLID_API_KEY;
+  const apiKey = process.env.UNWIREDLABS_API_KEY; // Changed to UNWIREDLABS_API_KEY
 
-  if (!apiKey || apiKey === "YOUR_OPENCELLID_API_KEY_HERE" || apiKey.trim() === "") {
-    console.error("OPENCELLID_API_KEY is not set or is a placeholder in .env file");
-    return { error: "Service configuration error: OpenCellID API key missing or invalid." };
+  if (!apiKey || apiKey === "YOUR_UNWIREDLABS_API_KEY_HERE" || apiKey.trim() === "") { // Updated placeholder check
+    console.error("UNWIREDLABS_API_KEY is not set or is a placeholder in .env file");
+    return { error: "Service configuration error: Unwired Labs API key missing or invalid." };
   }
   
   const mncNumber = parseInt(mncString, 10);
@@ -116,6 +116,7 @@ export async function locateCellTower(
       return { error: "Invalid operator MNC."}
   }
 
-  // Call the new service function
-  return fetchCellTowerLocationFromOpenCellID(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId);
+  // Call the Unwired Labs service function
+  // Assuming 'gsm' as default radio type for now. This could be made configurable.
+  return fetchCellTowerLocationFromUnwiredLabs(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId, 'gsm');
 }
