@@ -67,49 +67,49 @@ const prompt = ai.definePrompt({
   input: { schema: PersonProfileInputSchema },
   output: { schema: PersonProfileOutputSchema },
   prompt: `
-    You are an AI OSINT Analyst tasked with creating a plausible, illustrative profile for a fictional person.
-    The goal is to generate a rich, detailed, and coherent profile based *only* on the provided full name and location hint.
-    All information in the profile must be *synthesized* and *speculative*. Do NOT use real data or attempt to find real people.
-    This is for demonstration purposes to showcase AI's ability to generate structured, creative content.
+You are an AI OSINT Analyst tasked with creating a plausible, illustrative profile for a fictional person.
+The goal is to generate a rich, detailed, and coherent profile based *only* on the provided full name and location hint.
+All information in the profile must be *synthesized* and *speculative*. Do NOT use real data or attempt to find real people.
+This is for demonstration purposes to showcase AI's ability to generate structured, creative content.
 
-    Person's Full Name: {{{fullName}}}
-    Location Hint: {{{locationHint}}}
+Person's Full Name: {{{fullName}}}
+Location Hint: {{{locationHint}}}
 
-    Generate the following details for the profile. Be creative and ensure the details are consistent with each other:
+Generate the following details for the profile. Be creative and ensure the details are consistent with each other:
 
-    1.  **Profile Photo:**
-        *   `profilePhotoUrl`: Set this to "https://placehold.co/150x150.png".
-        *   `profilePhotoHint`: Set this to "person illustration abstract".
-    2.  **Basic Info:**
-        *   `fullName`: Use the provided full name.
-        *   `possibleAgeRange`: Infer a plausible age range (e.g., "late 20s", "40-50").
-        *   `genderGuess`: Infer a plausible gender based on the name if common, otherwise use "Unspecified".
-        *   `currentLocation`: Elaborate slightly on the provided location hint (e.g., if "Dhaka", maybe "Dhaka, Bangladesh, likely in a residential or business district").
-    3.  **Professional Sketch:**
-        *   `possibleOccupations`: List 2-3 plausible occupations that fit a general profile.
-        *   `potentialEmployers`: List 1-2 generic types of companies or fictional company names that align with the occupations.
-        *   `educationBackground`: List 1-2 plausible educational qualifications (e.g., "Degree in Business Administration from a notable local university", "Online certifications in Digital Marketing").
-        *   `keySkills`: List 3-5 plausible skills relevant to the synthesized profession.
-    4.  **Digital Footprint Estimate:**
-        *   `socialMediaHints`: Create 2-4 entries. For each:
-            *   `platform`: A common social media platform (LinkedIn, Facebook, Instagram, X/Twitter, a niche hobby forum).
-            *   `profileUrlPlaceholder`: A generic placeholder URL like "https://[platform].com/example/{{{fullName}}}".
-            *   `activitySummary`: A brief, plausible summary of how someone with this profile might use that platform (e.g., "Primarily for professional networking and industry updates", "Shares photos of travel and hobbies", "Engages in discussions on [topic]").
-        *   `forumMentions`: A plausible sentence about potential mentions in online forums related to their synthesized interests or profession.
-        *   `newsOrBlogMentions`: A plausible sentence about potential mentions in local news (e.g., for community involvement) or niche blogs.
-    5.  **Lifestyle Insights:**
-        *   `hobbies`: List 2-3 plausible hobbies or personal interests.
-        *   `associatedGroups`: A plausible sentence about potential involvement in local or online groups related to these hobbies.
-    6.  **Summary:**
-        *   `summary`: Write a 2-3 sentence narrative summary weaving together the key aspects of the synthesized profile.
-    7.  **Disclaimer:**
-        *   `disclaimer`: Set this to "IMPORTANT: This is an AI-synthesized illustrative profile created for demonstration purposes. All details are speculative and not based on real-time data of any specific individual. Do not use this information for real-world decisions."
+1.  **Profile Photo:**
+    *   profilePhotoUrl: Set this to "https://placehold.co/150x150.png".
+    *   profilePhotoHint: Set this to "person illustration abstract".
+2.  **Basic Info:**
+    *   fullName: Use the provided full name.
+    *   possibleAgeRange: Infer a plausible age range (e.g., "late 20s", "40-50").
+    *   genderGuess: Infer a plausible gender based on the name if common, otherwise use "Unspecified".
+    *   currentLocation: Elaborate slightly on the provided location hint (e.g., if "Dhaka", maybe "Dhaka, Bangladesh, likely in a residential or business district").
+3.  **Professional Sketch:**
+    *   possibleOccupations: List 2-3 plausible occupations that fit a general profile.
+    *   potentialEmployers: List 1-2 generic types of companies or fictional company names that align with the occupations.
+    *   educationBackground: List 1-2 plausible educational qualifications (e.g., "Degree in Business Administration from a notable local university", "Online certifications in Digital Marketing").
+    *   keySkills: List 3-5 plausible skills relevant to the synthesized profession.
+4.  **Digital Footprint Estimate:**
+    *   socialMediaHints: Create 2-4 entries. For each:
+        *   platform: A common social media platform (LinkedIn, Facebook, Instagram, X/Twitter, a niche hobby forum).
+        *   profileUrlPlaceholder: A generic placeholder URL like "https://[platform].com/example/{{{fullName}}}".
+        *   activitySummary: A brief, plausible summary of how someone with this profile might use that platform (e.g., "Primarily for professional networking and industry updates", "Shares photos of travel and hobbies", "Engages in discussions on [topic]").
+    *   forumMentions: A plausible sentence about potential mentions in online forums related to their synthesized interests or profession.
+    *   newsOrBlogMentions: A plausible sentence about potential mentions in local news (e.g., for community involvement) or niche blogs.
+5.  **Lifestyle Insights:**
+    *   hobbies: List 2-3 plausible hobbies or personal interests.
+    *   associatedGroups: A plausible sentence about potential involvement in local or online groups related to these hobbies.
+6.  **Summary:**
+    *   summary: Write a 2-3 sentence narrative summary weaving together the key aspects of the synthesized profile.
+7.  **Disclaimer:**
+    *   disclaimer: Set this to "IMPORTANT: This is an AI-synthesized illustrative profile created for demonstration purposes. All details are speculative and not based on real-time data of any specific individual. Do not use this information for real-world decisions."
 
-    Ensure all generated text is professional, coherent, and adheres to the OSINT report style.
-    Do not state that the person is fictional within the generated profile fields themselves, only in the disclaimer. The profile should read as if it *could* be real, for illustrative purposes.
-  `,
+Ensure all generated text is professional, coherent, and adheres to the OSINT report style.
+Do not state that the person is fictional within the generated profile fields themselves, only in the disclaimer. The profile should read as if it *could* be real, for illustrative purposes.
+`,
   config: {
-    temperature: 0.8, // Allow for some creativity
+    temperature: 0.8,
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
