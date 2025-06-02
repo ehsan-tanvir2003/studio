@@ -4,11 +4,12 @@
 import { numberScan, type NumberScanOutput, type NumberScanInput } from '@/ai/flows/number-scan';
 import * as z from 'zod';
 
-// Schema for input validation for the phone number string.
-// Matches typical North American numbers, 10 digits, optional +1 and common separators.
+// Schema for input validation for Bangladeshi phone numbers.
+// Matches 01XXXXXXXXX or +8801XXXXXXXXX (or 8801XXXXXXXXX)
+// Operator codes start with 1 or 3-9 after the '01' or '+8801' prefix.
 const phoneNumberSchema = z.string()
   .min(1, "Phone number is required.")
-  .regex(/^(?:\+?1[-.\s]?)?(?:\(?([2-9][0-8][0-9])\)?[-.\s]?)?([2-9][0-9]{2})[-.\s]?([0-9]{4})$/, "Please enter a valid North American phone number (e.g., 123-456-7890 or (123)456-7890).");
+  .regex(/^(?:\+8801|8801|01)[13-9]\d{8}$/, "Please enter a valid Bangladeshi phone number (e.g., 01712345678 or +8801712345678).");
 
 
 export async function performNumberScan(phoneNumber: string): Promise<NumberScanOutput | { error: string }> {
