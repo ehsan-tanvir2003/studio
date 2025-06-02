@@ -2,16 +2,14 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'InfoSleuth - Person Intel Analysis',
-  description: 'Gather OSINT about individuals based on name and city. Illustrative tool.',
+  title: 'AI Profile Synthesizer | Intel Suite',
+  description: 'Generate an illustrative OSINT-style person profile using AI.',
 };
 
-export default function InfoSleuthLayout({
+export default function AiProfileLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return <>{children}</>;
 }
-
-    

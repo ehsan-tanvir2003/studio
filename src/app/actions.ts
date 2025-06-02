@@ -2,48 +2,39 @@
 // src/app/actions.ts
 "use server";
 
-import { pdlPersonSearch, type PDLPersonSearchOutput, type PDLPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
+import { generatePersonProfile, type PersonProfileOutput, type PersonProfileInput } from '@/ai/flows/person-profile-builder-flow';
 import { fetchCellTowerLocation, type CellTowerLocation } from '@/services/unwiredlabs';
 import * as z from 'zod';
 
-// --- Person Intel Search (Now using PeopleDataLabs) ---
-const personSearchSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters long.").max(100, "Full name is too long."),
-  city: z.string().min(2, "City name must be at least 2 characters long.").max(100, "City name is too long."),
+// --- AI Person Profile Synthesizer ---
+const personProfileSchema = z.object({
+  fullName: z.string().min(3, "Full name must be at least 3 characters long.").max(100, "Full name is too long."),
+  locationHint: z.string().min(2, "Location hint must be at least 2 characters long.").max(100, "Location hint is too long."),
 });
 
-export async function performPersonSearch(
+export async function generateAiPersonProfile(
   fullName: string, 
-  city: string
-): Promise<PDLPersonSearchOutput | { error: string }> {
-  const validationResult = personSearchSchema.safeParse({ fullName, city });
+  locationHint: string
+): Promise<PersonProfileOutput | { error: string }> {
+  const validationResult = personProfileSchema.safeParse({ fullName, locationHint });
   if (!validationResult.success) {
     return { error: validationResult.error.errors.map(e => e.message).join(', ') };
   }
 
-  const input: PDLPersonSearchInput = validationResult.data;
+  const input: PersonProfileInput = validationResult.data;
 
   try {
-    const result = await pdlPersonSearch(input);
-    if (result.errorMessage) {
-      return { error: result.errorMessage };
-    }
-    return {
-      totalMatches: result.totalMatches,
-      matches: result.matches || [],
-    };
+    const result = await generatePersonProfile(input);
+    return result; // The flow itself will throw if output is null
   } catch (error) {
-    console.error("Error in pdlPersonSearch AI flow:", error);
+    console.error("Error in generatePersonProfile AI flow:", error);
     if (error instanceof Error) {
         if (error.message.includes("503") || error.message.toLowerCase().includes("model is overloaded") || error.message.toLowerCase().includes("service unavailable")) {
             return { error: "The AI service is temporarily busy or unavailable. Please try again in a few moments." };
         }
-         if (error.message.toLowerCase().includes('api key')) {
-            return { error: "PDL API Key error. Please check your configuration."}
-        }
-        return { error: `AI processing failed: ${error.message}` };
+        return { error: `AI profile generation failed: ${error.message}` };
     }
-    return { error: "An unexpected error occurred during the PDL search." };
+    return { error: "An unexpected error occurred during AI profile generation." };
   }
 }
 
@@ -69,9 +60,9 @@ export async function locateCellTower(
   const { lac, cellId, mnc } = validationResult.data;
   const apiKey = process.env.UNWIREDLABS_API_KEY;
 
-  if (!apiKey) {
-    console.error("UNWIREDLABS_API_KEY is not set in .env file");
-    return { error: "Service configuration error: API key missing." };
+  if (!apiKey || apiKey === "YOUR_UNWIREDLABS_API_KEY_HERE") {
+    console.error("UNWIREDLABS_API_KEY is not set or is a placeholder in .env file");
+    return { error: "Service configuration error: Unwired Labs API key missing or invalid." };
   }
   
   const mncNumber = parseInt(mnc, 10);
@@ -81,5 +72,3 @@ export async function locateCellTower(
 
   return fetchCellTowerLocation(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId);
 }
-
-    

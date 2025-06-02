@@ -7,36 +7,57 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { UserSearch, Loader2, Search, MapPinIcon } from 'lucide-react';
+import { UserCog, Loader2, Search, MapPinIcon, BrainCircuit } from 'lucide-react'; // Changed UserSearch to UserCog or BrainCircuit
 
 const formSchema = z.object({
   fullName: z.string()
-    .min(2, "Full name must be at least 2 characters.")
+    .min(3, "Full name must be at least 3 characters.")
     .max(100, "Full name seems too long."),
-  city: z.string()
-    .min(2, "City name must be at least 2 characters.")
-    .max(100, "City name seems too long."),
+  locationHint: z.string() // Changed from city to locationHint
+    .min(2, "Location hint must be at least 2 characters.")
+    .max(100, "Location hint seems too long."),
 });
 
-type PersonSearchFormValues = z.infer<typeof formSchema>;
+type PersonProfileFormValues = z.infer<typeof formSchema>; // Renamed for clarity
 
 interface PersonSearchFormProps {
-  onSubmit: (fullName: string, city: string) => Promise<void>;
+  onSubmit: (fullName: string, locationHint: string) => Promise<void>;
   isLoading: boolean;
+  formTitle?: string;
+  fullNameLabel?: string;
+  fullNamePlaceholder?: string;
+  fullNameDescription?: string;
+  locationLabel?: string;
+  locationPlaceholder?: string;
+  locationDescription?: string;
+  buttonText?: string;
+  loadingButtonText?: string;
 }
 
-export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFormProps) {
-  const form = useForm<PersonSearchFormValues>({
+export default function PersonSearchForm({ 
+  onSubmit, 
+  isLoading,
+  formTitle = "Initiate Search",
+  fullNameLabel = "Person's Full Name",
+  fullNamePlaceholder = "[Enter Full Name to Search]",
+  fullNameDescription = "Provide the full name of the person you are searching for.",
+  locationLabel = "Person's City / Region",
+  locationPlaceholder = "[Enter City/Region e.g., Dhaka]",
+  locationDescription = "Specify the person's city or general region to refine the search.",
+  buttonText = "[Initiate Search]",
+  loadingButtonText = "Searching Intel Database..."
+}: PersonSearchFormProps) {
+  const form = useForm<PersonProfileFormValues>({ // Use renamed type
     resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: '',
-      city: '',
+      locationHint: '', // Changed from city
     },
     mode: "onChange"
   });
 
-  const handleSubmit = (values: PersonSearchFormValues) => {
-    onSubmit(values.fullName, values.city);
+  const handleSubmit = (values: PersonProfileFormValues) => {
+    onSubmit(values.fullName, values.locationHint); // Pass locationHint
   };
 
   return (
@@ -48,11 +69,11 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-lg font-headline text-primary flex items-center">
-                <UserSearch className="mr-2 h-5 w-5" /> Person's Full Name
+                <UserCog className="mr-2 h-5 w-5" /> {fullNameLabel}
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="[Enter Full Name to Search]" 
+                  placeholder={fullNamePlaceholder}
                   {...field} 
                   className="text-base h-12 font-code bg-input/50 focus:bg-input border-border focus:border-primary"
                   aria-describedby="fullname-description"
@@ -60,7 +81,7 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
                 />
               </FormControl>
               <FormDescription id="fullname-description" className="text-sm font-code text-muted-foreground/80">
-                Provide the full name of the person you are searching for.
+                {fullNameDescription}
               </FormDescription>
               <FormMessage className="font-code text-destructive/80" />
             </FormItem>
@@ -68,23 +89,23 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
         />
         <FormField
           control={form.control}
-          name="city"
+          name="locationHint" 
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-lg font-headline text-primary flex items-center">
-                <MapPinIcon className="mr-2 h-5 w-5" /> Person's City / Region
+                <MapPinIcon className="mr-2 h-5 w-5" /> {locationLabel}
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="[Enter City/Region e.g., Dhaka]" 
+                  placeholder={locationPlaceholder}
                   {...field} 
                   className="text-base h-12 font-code bg-input/50 focus:bg-input border-border focus:border-primary"
-                  aria-describedby="city-description"
+                  aria-describedby="location-description"
                   disabled={isLoading}
                 />
               </FormControl>
-              <FormDescription id="city-description" className="text-sm font-code text-muted-foreground/80">
-                Specify the person's city or general region to refine the search.
+              <FormDescription id="location-description" className="text-sm font-code text-muted-foreground/80">
+                {locationDescription}
               </FormDescription>
               <FormMessage className="font-code text-destructive/80" />
             </FormItem>
@@ -94,12 +115,12 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Searching Intel Database...
+              {loadingButtonText}
             </>
           ) : (
             <>
-              <Search className="mr-2 h-5 w-5" />
-              [Initiate Search]
+              <BrainCircuit className="mr-2 h-5 w-5" /> {/* Or Search icon if preferred */}
+              {buttonText}
             </>
           )}
         </Button>
@@ -107,5 +128,3 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
     </Form>
   );
 }
-
-    
