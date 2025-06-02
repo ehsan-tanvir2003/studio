@@ -94,8 +94,8 @@ const pdlPersonSearchFlow = ai.defineFlow(
                 { "match": { "first_name": nameParts[0] } },
                 { "match": { "last_name": nameParts[0] } },
                 { "match_phrase": { "full_name": input.fullName } }
-              ],
-              "minimum_should_match": 1
+              ]
+              // "minimum_should_match": 1 // Removed
             }
           });
         } else {
@@ -111,8 +111,8 @@ const pdlPersonSearchFlow = ai.defineFlow(
                   }
                 },
                 { "match_phrase": { "full_name": input.fullName } }
-              ],
-              "minimum_should_match": 1
+              ]
+              // "minimum_should_match": 1 // Removed
             }
           });
         }
@@ -128,8 +128,8 @@ const pdlPersonSearchFlow = ai.defineFlow(
               { "match": { "location_region": locationTerm } },
               { "match": { "location_country": locationTerm } },
               { "match_phrase": { "location_name": locationTerm } }
-            ],
-            "minimum_should_match": 1
+            ]
+            // "minimum_should_match": 1 // Removed
           }
         });
       } else {
