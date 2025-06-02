@@ -17,7 +17,7 @@ const PdlPersonSearchInputSchema = z.object({
   location: z.string().min(2, "Location must be at least 2 characters.").describe('The location (e.g., city, region, country) to search within.'),
   size: z.number().optional().default(10).describe('Number of results to return.'),
 });
-export type PdlPersonSearchInput = z.infer<typeof PdlPersonSearchInputSchema>;
+type PdlPersonSearchInput = z.infer<typeof PdlPersonSearchInputSchema>;
 
 const PdlPersonSchema = z.object({
   id: z.string().nullable().describe('PDL ID of the person.'),
@@ -43,7 +43,7 @@ const PdlPersonSchema = z.object({
   summary: z.string().nullable().describe('Professional summary.'),
   dataset_version: z.string().optional().describe('PDL dataset version.'),
 });
-export type PdlPerson = z.infer<typeof PdlPersonSchema>;
+type PdlPerson = z.infer<typeof PdlPersonSchema>;
 
 const PdlPersonSearchOutputSchema = z.object({
   matches: z.array(PdlPersonSchema).describe('Array of matching person profiles from PDL.'),
@@ -51,7 +51,7 @@ const PdlPersonSearchOutputSchema = z.object({
   pdlQuery: z.string().optional().describe('The Elasticsearch-style JSON query sent to PDL.'),
   error: z.string().optional().describe('Error message if the search failed.'),
 });
-export type PdlPersonSearchOutput = z.infer<typeof PdlPersonSearchOutputSchema>;
+type PdlPersonSearchOutput = z.infer<typeof PdlPersonSearchOutputSchema>;
 
 
 export async function searchPdlPersonProfiles(input: PdlPersonSearchInput): Promise<PdlPersonSearchOutput> {
@@ -161,22 +161,33 @@ const pdlPersonSearchFlow = ai.defineFlow(
 
       const responseText = await response.text();
       console.log(`[PDL Flow] Received response from PDL API with status: ${response.status} ${response.statusText}`);
-      // console.log('[PDL Flow] PDL API Raw Response Body:', responseText); // Uncomment for very verbose debugging
+      
+      const responseData = JSON.parse(responseText);
 
-      if (!response.ok) {
+      if (response.status === 404 && responseData.error?.type === 'not_found') {
+        console.warn(`[PDL Flow] PDL API returned 404 Not Found. Query: ${pdlEsQueryForLogging}`);
+        return {
+          matches: [],
+          totalMatches: 0,
+          pdlQuery: pdlEsQueryForLogging,
+          // No error field, so frontend treats as "no results"
+        };
+      }
+      
+      if (!response.ok) { // Handles other errors (non-404 or 404s not of type 'not_found')
         let errorDetails = `PDL API Error (${response.status}): ${response.statusText}`;
         try {
-          const errorJson = JSON.parse(responseText);
-          errorDetails += ` - ${errorJson.error?.message || errorJson.message || 'No specific error message in JSON.'}`;
-          if(errorJson.error?.type) errorDetails += ` (Type: ${errorJson.error.type})`;
+          // const errorJson = JSON.parse(responseText); // responseData is already parsed
+          errorDetails += ` - ${responseData.error?.message || responseData.message || 'No specific error message in JSON.'}`;
+          if(responseData.error?.type) errorDetails += ` (Type: ${responseData.error.type})`;
         } catch (e) {
+          // This catch is less likely to be hit if responseData is already parsed
           errorDetails += ` - Could not parse error response JSON. Raw response: ${responseText.substring(0, 200)}`;
         }
         console.error('[PDL Flow] Error response details:', errorDetails);
         return { matches: [], totalMatches: 0, error: errorDetails, pdlQuery: pdlEsQueryForLogging };
       }
 
-      const responseData = JSON.parse(responseText);
 
       if (responseData.status === 200 && responseData.data) {
         const matches: PdlPerson[] = responseData.data.map((pdlPerson: any) => ({
@@ -196,11 +207,11 @@ const pdlPersonSearchFlow = ai.defineFlow(
           locationLocality: pdlPerson.location_locality,
           locationRegion: pdlPerson.location_region,
           locationCountry: pdlPerson.location_country,
-          phoneNumbers: pdlPerson.phone_numbers, // Assumes phone_numbers is always an array or null/undefined
+          phoneNumbers: pdlPerson.phone_numbers, 
           emails: Array.isArray(pdlPerson.emails) 
             ? pdlPerson.emails.map((e: any) => ({ address: e.address, type: e.type || null })) 
             : [],
-          skills: pdlPerson.skills, // Assumes skills is always an array or null/undefined
+          skills: pdlPerson.skills, 
           summary: pdlPerson.summary,
           likelihood: pdlPerson.likelihood,
           dataset_version: pdlPerson.dataset_version,
@@ -212,7 +223,9 @@ const pdlPersonSearchFlow = ai.defineFlow(
           pdlQuery: pdlEsQueryForLogging,
         };
       } else {
-        console.warn('[PDL Flow] PDL API did not return status 200 or data was missing. Response:', responseData);
+        // This case might be hit if response.ok was true but responseData.status wasn't 200,
+        // or if responseData.data was missing.
+        console.warn('[PDL Flow] PDL API response was ok, but data was missing or status not 200. Response:', responseData);
         return {
           matches: [],
           totalMatches: 0,
