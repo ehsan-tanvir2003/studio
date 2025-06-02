@@ -36,6 +36,9 @@ export async function performNumberScan(phoneNumber: string): Promise<NumberScan
   } catch (error) {
     console.error("Error in numberScan AI flow:", error);
     if (error instanceof Error) {
+        if (error.message.includes("503") || error.message.toLowerCase().includes("model is overloaded") || error.message.toLowerCase().includes("service unavailable")) {
+            return { error: "The AI service is temporarily busy or unavailable. Please try again in a few moments." };
+        }
         return { error: `AI processing failed: ${error.message}` };
     }
     return { error: "An unexpected error occurred during the AI scan." };
