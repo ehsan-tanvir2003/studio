@@ -37,6 +37,7 @@ export default function RootLayout({
             <p className="font-code">Developed By Flg Offr Ehsan</p>
             <p className="font-code">Bangladesh Air Force</p>
             <p className="font-code">Technical Support Lt Jabid Hasan</p>
+            <p className="font-code">Bangladesh Army</p>
           </footer>
         </div>
         <Toaster />
