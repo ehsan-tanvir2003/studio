@@ -1,3 +1,4 @@
+
 // src/app/actions.ts
 "use server";
 
@@ -24,12 +25,13 @@ export async function performNumberScan(phoneNumber: string): Promise<NumberScan
   try {
     const result = await numberScan(input);
     
-    // The AI flow might return an empty summary or empty sources if nothing is found.
-    // This is a valid response, not an error.
-    // Ensure the structure is consistent even if AI provides minimal data.
+    // Ensure the structure is consistent even if AI provides minimal data for optional fields.
     return {
-      summary: result?.summary || "No specific summary could be generated for this number.",
-      sources: result?.sources || []
+      summary: result.summary || "No specific summary could be generated for this number.",
+      sources: result.sources || [],
+      associatedNames: result.associatedNames || [],
+      potentialLocations: result.potentialLocations || [],
+      socialMediaProfiles: result.socialMediaProfiles || []
     };
   } catch (error) {
     console.error("Error in numberScan AI flow:", error);
@@ -39,3 +41,4 @@ export async function performNumberScan(phoneNumber: string): Promise<NumberScan
     return { error: "An unexpected error occurred during the AI scan." };
   }
 }
+

@@ -1,7 +1,8 @@
+
 import type { NumberScanOutput } from '@/ai/flows/number-scan';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Link as LinkIcon, FileText, Info, ServerCrash, CheckCircle2 } from 'lucide-react';
+import { Link as LinkIcon, FileText, Info, Users, MapPin, CheckCircle2 } from 'lucide-react';
 
 interface ReportDisplayProps {
   report: NumberScanOutput;
@@ -13,8 +14,6 @@ const getSourceIcon = (url: string): React.ReactNode => {
     if (lcUrl.endsWith('.pdf')) return <FileText className="h-5 w-5 text-accent shrink-0" />;
     if (lcUrl.endsWith('.doc') || lcUrl.endsWith('.docx')) return <FileText className="h-5 w-5 text-accent shrink-0" />;
     if (lcUrl.endsWith('.xls') || lcUrl.endsWith('.xlsx')) return <FileText className="h-5 w-5 text-accent shrink-0" />;
-    // Add more specific icons based on common domains if desired
-    // e.g. if (new URL(url).hostname.includes('linkedin.com')) return <LinkedinIcon className="h-5 w-5 text-accent" />;
   } catch (e) {
     // Invalid URL, fallback
   }
@@ -24,14 +23,17 @@ const getSourceIcon = (url: string): React.ReactNode => {
 export default function ReportDisplay({ report }: ReportDisplayProps) {
   const hasSummary = report.summary && report.summary !== "No specific summary could be generated for this number." && report.summary !== "No summary available.";
   const hasSources = report.sources && report.sources.length > 0;
+  const hasNames = report.associatedNames && report.associatedNames.length > 0;
+  const hasLocations = report.potentialLocations && report.potentialLocations.length > 0;
+  const hasSocialProfiles = report.socialMediaProfiles && report.socialMediaProfiles.length > 0;
 
-  if (!hasSummary && !hasSources) {
+  if (!hasSummary && !hasSources && !hasNames && !hasLocations && !hasSocialProfiles) {
     return (
       <Alert className="mt-8 shadow-md">
         <Info className="h-5 w-5" />
         <AlertTitle className="font-headline">Scan Complete</AlertTitle>
         <AlertDescription>
-          No specific public information or relevant sources were found for this number.
+          No specific public information or relevant details were found for this number.
         </AlertDescription>
       </Alert>
     );
@@ -49,6 +51,71 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
           </CardHeader>
           <CardContent className="p-6">
             <p className="text-base sm:text-lg whitespace-pre-wrap leading-relaxed">{report.summary}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {hasNames && (
+        <Card className="shadow-xl overflow-hidden">
+          <CardHeader className="bg-secondary/10">
+            <CardTitle className="text-xl sm:text-2xl font-headline text-secondary-foreground flex items-center">
+              <Users className="mr-3 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+              Associated Names
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-2">
+            {report.associatedNames?.map((name, index) => (
+              <div key={index} className="text-base bg-card p-3 rounded-md border border-border">
+                {name}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {hasLocations && (
+        <Card className="shadow-xl overflow-hidden">
+          <CardHeader className="bg-secondary/10">
+            <CardTitle className="text-xl sm:text-2xl font-headline text-secondary-foreground flex items-center">
+              <MapPin className="mr-3 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+              Location Clues
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-2">
+            {report.potentialLocations?.map((location, index) => (
+              <div key={index} className="text-base bg-card p-3 rounded-md border border-border">
+                {location}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+      
+      {hasSocialProfiles && (
+         <Card className="shadow-xl overflow-hidden">
+          <CardHeader className="bg-secondary/10">
+            <CardTitle className="text-xl sm:text-2xl font-headline text-secondary-foreground flex items-center">
+              <Users className="mr-3 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+              Social Media Footprints
+            </CardTitle>
+             <CardDescription className="pt-1">
+              Hints of social media presence found in public data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 p-6">
+            {report.socialMediaProfiles?.map((profile, index) => (
+              <Card key={index} className="bg-card border-border hover:shadow-md transition-shadow duration-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-3">
+                     <Users className="h-5 w-5 text-accent shrink-0 mt-1" />
+                    <div>
+                      <p className="font-semibold text-base">{profile.platform}</p>
+                      <p className="text-sm text-muted-foreground break-all">{profile.handleOrUrl}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </CardContent>
         </Card>
       )}
@@ -89,3 +156,4 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
     </div>
   );
 }
+
