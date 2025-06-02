@@ -37,11 +37,6 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Camo variables for light theme (though app is dark) */
-    --camo-darker-hsl: 220 13% 85%;
-    --camo-lighter-hsl: 220 13% 98%;
-    --camo-square-size: 20px;
   }
   .dark {
     --background: 220 10% 15%;
@@ -76,11 +71,6 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Camo variables for dark theme */
-    --camo-darker-hsl: 220 10% 12%; /* Subtly darker than background */
-    --camo-lighter-hsl: 220 10% 18%; /* Subtly lighter than background */
-    --camo-square-size: 20px;
   }
 }
 
@@ -90,28 +80,5 @@
   }
   body {
     @apply bg-background text-foreground;
-
-    /* Digital Camo Pattern */
-    /* This pattern creates blocks of three colors: background, darker, and lighter camo shades */
-    /* Adjust --s (size) to change the scale of the camo blocks */
-    --s: var(--camo-square-size);
-    --c0: hsl(var(--background));
-    --c1: hsl(var(--camo-darker-hsl));
-    --c2: hsl(var(--camo-lighter-hsl));
-    
-    background-image:
-      /* Layer for c1 blocks */
-      repeating-linear-gradient(45deg, var(--c1) 0, var(--c1) var(--s), transparent var(--s), transparent calc(2 * var(--s))),
-      repeating-linear-gradient(135deg, var(--c1) 0, var(--c1) var(--s), transparent var(--s), transparent calc(2 * var(--s))),
-      /* Layer for c2 blocks, offset */
-      repeating-linear-gradient(45deg, var(--c2) 0, var(--c2) var(--s), transparent var(--s), transparent calc(2 * var(--s))),
-      repeating-linear-gradient(135deg, var(--c2) 0, var(--c2) var(--s), transparent var(--s), transparent calc(2 * var(--s)));
-    background-size: calc(4 * var(--s)) calc(4 * var(--s)); /* Overall pattern repeat size */
-    background-position: 
-      0 0, /* c1 layer */
-      0 0, /* c1 layer, combines with above */
-      var(--s) var(--s), /* c2 layer, offset */
-      var(--s) var(--s); /* c2 layer, combines with above */
-    /* The base color is set by @apply bg-background, so these gradients overlay it */
   }
 }
