@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -6,14 +7,12 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Terminal } from 'lucide-react';
 
-// Matches 01XXXXXXXXX or +8801XXXXXXXXX (or 8801XXXXXXXXX)
-// Operator codes start with 1 or 3-9 after the '01' or '+8801' prefix.
 const formSchema = z.object({
   phoneNumber: z.string()
     .min(1, "Phone number is required.")
-    .regex(/^(?:\+8801|8801|01)[13-9]\d{8}$/, "Please enter a valid Bangladeshi phone number (e.g., 01712345678 or +8801712345678).")
+    .regex(/^(?:\+8801|8801|01)[13-9]\d{8}$/, "Invalid BD Phone Number. Format: 01XXXXXXXXX or +8801XXXXXXXXX")
 });
 
 type PhoneNumberFormValues = z.infer<typeof formSchema>;
@@ -29,7 +28,7 @@ export default function PhoneNumberForm({ onSubmit, isLoading }: PhoneNumberForm
     defaultValues: {
       phoneNumber: '',
     },
-    mode: "onChange" // Validate on change for better user experience
+    mode: "onChange"
   });
 
   const handleSubmit = (values: PhoneNumberFormValues) => {
@@ -38,39 +37,41 @@ export default function PhoneNumberForm({ onSubmit, isLoading }: PhoneNumberForm
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 bg-card p-6 sm:p-8 rounded-lg shadow-lg">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 bg-card/80 p-6 sm:p-8 rounded-lg shadow-xl border border-border/50">
         <FormField
           control={form.control}
           name="phoneNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-lg font-headline">Phone Number</FormLabel>
+              <FormLabel className="text-lg font-headline text-primary flex items-center">
+                <Terminal className="mr-2 h-5 w-5" /> Target Phone Number
+              </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="e.g., 01712345678" 
+                  placeholder="[Enter BD Number e.g., 01712345678]" 
                   {...field} 
-                  className="text-base h-12"
+                  className="text-base h-12 font-code bg-input/50 focus:bg-input border-border focus:border-primary"
                   aria-describedby="phone-description"
                   disabled={isLoading}
                 />
               </FormControl>
-              <FormDescription id="phone-description" className="text-sm">
-                Enter a Bangladeshi phone number to start your search.
+              <FormDescription id="phone-description" className="text-sm font-code text-muted-foreground/80">
+                Initiate public record scan for the provided number.
               </FormDescription>
-              <FormMessage />
+              <FormMessage className="font-code text-destructive/80" />
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading || !form.formState.isValid} className="w-full h-12 text-lg bg-primary hover:bg-primary/90 text-primary-foreground">
+        <Button type="submit" disabled={isLoading || !form.formState.isValid} className="w-full h-12 text-lg bg-primary hover:bg-primary/90 text-primary-foreground font-code shadow-md hover:shadow-lg transition-all">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Scanning...
+              SCANNING_PROTOCOL_ACTIVE...
             </>
           ) : (
             <>
               <Search className="mr-2 h-5 w-5" />
-              Scan Number
+              [Execute Scan]
             </>
           )}
         </Button>
