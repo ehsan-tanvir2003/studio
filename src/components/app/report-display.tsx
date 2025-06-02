@@ -2,7 +2,7 @@
 import type { NumberScanOutput } from '@/ai/flows/number-scan';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Link as LinkIcon, FileText, Info, Users, MapPin, CheckCircle2 } from 'lucide-react';
+import { Link as LinkIcon, FileText, Info, Users, MapPin, CheckCircle2, Briefcase, Building, Star, Users2, BarChart3 } from 'lucide-react';
 
 interface ReportDisplayProps {
   report: NumberScanOutput;
@@ -26,8 +26,9 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
   const hasNames = report.associatedNames && report.associatedNames.length > 0;
   const hasLocations = report.potentialLocations && report.potentialLocations.length > 0;
   const hasSocialProfiles = report.socialMediaProfiles && report.socialMediaProfiles.length > 0;
+  const hasBusinessListings = report.businessListings && report.businessListings.length > 0;
 
-  if (!hasSummary && !hasSources && !hasNames && !hasLocations && !hasSocialProfiles) {
+  if (!hasSummary && !hasSources && !hasNames && !hasLocations && !hasSocialProfiles && !hasBusinessListings) {
     return (
       <Alert className="mt-8 shadow-md">
         <Info className="h-5 w-5" />
@@ -95,7 +96,7 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
          <Card className="shadow-xl overflow-hidden">
           <CardHeader className="bg-secondary/10">
             <CardTitle className="text-xl sm:text-2xl font-headline text-secondary-foreground flex items-center">
-              <Users className="mr-3 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+              <Users2 className="mr-3 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
               Social Media Footprints
             </CardTitle>
              <CardDescription className="pt-1">
@@ -107,10 +108,48 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
               <Card key={index} className="bg-card border-border hover:shadow-md transition-shadow duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-3">
-                     <Users className="h-5 w-5 text-accent shrink-0 mt-1" />
-                    <div>
+                     <Users2 className="h-5 w-5 text-accent shrink-0 mt-1" />
+                    <div className="flex-grow">
                       <p className="font-semibold text-base">{profile.platform}</p>
                       <p className="text-sm text-muted-foreground break-all">{profile.handleOrUrl}</p>
+                      {profile.accountType && <p className="text-xs text-muted-foreground mt-1">Type: {profile.accountType}</p>}
+                      {profile.followerCountEstimate && <p className="text-xs text-muted-foreground mt-1">Followers: {profile.followerCountEstimate}</p>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {hasBusinessListings && (
+        <Card className="shadow-xl overflow-hidden">
+          <CardHeader className="bg-secondary/10">
+            <CardTitle className="text-xl sm:text-2xl font-headline text-secondary-foreground flex items-center">
+              <Briefcase className="mr-3 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+              Business Listings
+            </CardTitle>
+            <CardDescription className="pt-1">
+              Potential business-related information found in public data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 p-6">
+            {report.businessListings?.map((listing, index) => (
+              <Card key={index} className="bg-card border-border hover:shadow-md transition-shadow duration-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-3">
+                    <Building className="h-5 w-5 text-accent shrink-0 mt-1" />
+                    <div className="flex-grow">
+                      {listing.businessName && <p className="font-semibold text-base">{listing.businessName}</p>}
+                      {listing.category && <p className="text-sm text-muted-foreground">{listing.category}</p>}
+                      {listing.shortDescription && <p className="text-xs text-muted-foreground mt-2">{listing.shortDescription}</p>}
+                      {listing.simulatedRating && (
+                        <div className="flex items-center mt-2">
+                          <Star className="h-4 w-4 text-yellow-500 mr-1" /> 
+                          <p className="text-xs text-muted-foreground">{listing.simulatedRating}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -156,4 +195,3 @@ export default function ReportDisplay({ report }: ReportDisplayProps) {
     </div>
   );
 }
-

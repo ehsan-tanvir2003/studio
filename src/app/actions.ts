@@ -31,7 +31,8 @@ export async function performNumberScan(phoneNumber: string): Promise<NumberScan
       sources: result.sources || [],
       associatedNames: result.associatedNames || [],
       potentialLocations: result.potentialLocations || [],
-      socialMediaProfiles: result.socialMediaProfiles || []
+      socialMediaProfiles: result.socialMediaProfiles || [],
+      businessListings: result.businessListings || []
     };
   } catch (error) {
     console.error("Error in numberScan AI flow:", error);
