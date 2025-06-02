@@ -18,21 +18,21 @@ const PersonIntelInputSchema = z.object({
 export type PersonIntelInput = z.infer<typeof PersonIntelInputSchema>;
 
 const ProbablePersonMatchSchema = z.object({
-  name: z.string().describe('The full name of the potential match.'),
-  sourcePlatform: z.string().describe('The simulated platform where this information was found (e.g., Facebook, LinkedIn, News Article).'),
-  profileUrl: z.string().url().optional().describe('A direct URL to the simulated profile or source page.'),
-  imageUrl: z.string().url().describe('URL of a representative placeholder image for the person (e.g., https://placehold.co/100x100.png).'),
-  imageHint: z.string().default('profile person').describe('A hint for the placeholder image, e.g., "profile person".'),
-  details: z.string().describe('A brief summary of relevant information found about this person, potentially including age, occupation, or connections.'),
-  locationMatch: z.string().optional().describe('How the found location data relates to the input city (e.g., "Exact Match", "Nearby City", "Region Mentioned").'),
-  confidenceScore: z.number().min(0).max(1).optional().describe('A simulated confidence score (0.0 to 1.0) of this match being correct.')
+  name: z.string().describe('The full name of the potential match, or a description of the search type (e.g., "Username Search via WhatsMyName").'),
+  sourcePlatform: z.string().describe('The simulated platform where this information was found (e.g., Facebook, LinkedIn, News Article, WhatsMyName.app).'),
+  profileUrl: z.string().url().optional().describe('A direct URL to the simulated profile, source page, or relevant tool (e.g., https://whatsmyname.app/).'),
+  imageUrl: z.string().url().describe('URL of a representative placeholder image for the person or concept (e.g., https://placehold.co/100x100.png).'),
+  imageHint: z.string().default('profile person').describe('A hint for the placeholder image, e.g., "profile person", "network search".'),
+  details: z.string().describe('A brief summary of relevant information found or a description of what the source offers.'),
+  locationMatch: z.string().optional().describe('How the found location data relates to the input city (e.g., "Exact Match", "Nearby City", "Region Mentioned", "N/A for username search").'),
+  confidenceScore: z.number().min(0).max(1).optional().describe('A simulated confidence score (0.0 to 1.0) of this match being correct or relevant.')
 });
 export type ProbablePersonMatch = z.infer<typeof ProbablePersonMatchSchema>;
 
 const PersonIntelOutputSchema = z.object({
   overallSummary: z.string().describe('A high-level summary of the search findings and methodology.'),
-  probableMatches: z.array(ProbablePersonMatchSchema).describe('A list of probable individuals matching the search criteria. Aim for 2-4 diverse simulated matches.'),
-  dataSourcesAnalyzed: z.array(z.string().url()).describe('A list of unique, simulated URLs that were analyzed to generate the matches (e.g., fake social media search result pages, mock news article links).'),
+  probableMatches: z.array(ProbablePersonMatchSchema).describe('A list of probable individuals or OSINT tool summaries matching the search criteria. Aim for 2-4 diverse simulated entries.'),
+  dataSourcesAnalyzed: z.array(z.string().url()).describe('A list of unique, simulated URLs that were analyzed to generate the matches (e.g., fake social media search result pages, mock news article links, https://whatsmyname.app/).'),
 });
 export type PersonIntelOutput = z.infer<typeof PersonIntelOutputSchema>;
 
@@ -40,36 +40,36 @@ export async function personIntelSearch(input: PersonIntelInput): Promise<Person
   return personIntelFlow(input);
 }
 
-// Simulated Tool: Search Web for Person
+// Simulated Tool: Search Web for Person (and include WhatsMyName.app)
 const searchWebForPersonByNameCity = ai.defineTool(
   {
     name: 'searchWebForPersonByNameCity',
-    description: 'Simulates searching the web (social media, public records, news) for a person based on their full name and city. Returns a list of plausible-sounding but entirely FAKE URLs that might contain information about such a person. Do not return real URLs.',
+    description: 'Simulates searching the web (social media, public records, news) for a person. Returns a list of plausible-sounding FAKE URLs and includes a link to "https://whatsmyname.app/" for username checking simulation.',
     inputSchema: z.object({
       fullName: z.string(),
       city: z.string(),
     }),
-    outputSchema: z.array(z.string().url()).describe('An array of 2 to 4 FAKE URLs (e.g., fake social media profile links, mock news mentions). These URLs are for simulation purposes only.'),
+    outputSchema: z.array(z.string().url()).describe('An array of 2 to 4 FAKE URLs (e.g., fake social media profiles, mock news) and "https://whatsmyname.app/". These are for simulation.'),
   },
   async (input) => {
-    console.log(`Simulating web search for: ${input.fullName} in ${input.city}`);
+    console.log(`Simulating web search for: ${input.fullName} in ${input.city}, including WhatsMyName.app`);
     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
     const nameSlug = input.fullName.toLowerCase().replace(/\s+/g, '.');
     const citySlug = input.city.toLowerCase().replace(/\s+/g, '');
     return [
       `https://fake-social-platform.example.com/profile/${nameSlug}-${citySlug}`,
-      `https://another-social.example.net/users/${nameSlug}`,
+      'https://whatsmyname.app/', // Include WhatsMyName.app
       `https://localnews.example.org/${citySlug}/article/${nameSlug}-feature`,
-      `https://professionalnetwork.example.com/in/${nameSlug}`
-    ];
+      `https://another-social.example.net/users/${nameSlug}`
+    ].slice(0, Math.floor(Math.random() * 2) + 3); // Return 3-4 URLs
   }
 );
 
-// Simulated Tool: Extract Profile Information from a URL
+// Simulated Tool: Extract Profile Information from a URL or Summarize WhatsMyName.app
 const extractPersonProfileFromUrl = ai.defineTool(
   {
     name: 'extractPersonProfileFromUrl',
-    description: 'Given a FAKE URL (from `searchWebForPersonByNameCity`), simulate extracting structured information for a potential person match. Generate plausible but fictional details. Always provide a placeholder image URL (https://placehold.co/100x100.png).',
+    description: 'Given a FAKE URL (from `searchWebForPersonByNameCity`), simulate extracting structured information. If URL is "https://whatsmyname.app/", provide a summary of its purpose for username checking. Always provide a placeholder image URL.',
     inputSchema: z.object({
       url: z.string().url(),
       originalFullName: z.string().describe("The original full name used in the search query, for context."),
@@ -79,7 +79,21 @@ const extractPersonProfileFromUrl = ai.defineTool(
   },
   async (input) => {
     console.log(`Simulating profile extraction from: ${input.url} for ${input.originalFullName}`);
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 700)); 
+
+    if (input.url === 'https://whatsmyname.app/') {
+      const derivedUsername = input.originalFullName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/gi, '');
+      return {
+        name: `Username Search for "${input.originalFullName}"`,
+        sourcePlatform: "WhatsMyName.app (Username Check)",
+        profileUrl: 'https://whatsmyname.app/',
+        imageUrl: `https://placehold.co/100x100.png`,
+        imageHint: "network search tool",
+        details: `This tool, WhatsMyName.app, can be used to check for the existence of a username (e.g., "${derivedUsername}") across many online platforms. To perform a real search, visit the site and enter the desired username. This entry is a conceptual placeholder.`,
+        locationMatch: "N/A (Username search tool)",
+        confidenceScore: 0.55, // Represents relevance as a tool suggestion
+      };
+    }
 
     let platform = "Generic Public Record";
     if (input.url.includes('fake-social-platform.example.com')) platform = "Fake Social Platform";
@@ -92,10 +106,8 @@ const extractPersonProfileFromUrl = ai.defineTool(
     const randomFirstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const randomLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
     
-    // Slightly vary the name to simulate finding different people or variations
     const isOriginalName = Math.random() > 0.3;
     const extractedName = isOriginalName ? input.originalFullName : `${randomFirstName} ${randomLastName}`;
-
 
     const occupations = ["Software Engineer", "Graphic Designer", "Project Manager", "Marketing Specialist", "Local Business Owner", "Teacher"];
     const details = [
@@ -110,11 +122,11 @@ const extractPersonProfileFromUrl = ai.defineTool(
       name: extractedName,
       sourcePlatform: platform,
       profileUrl: input.url,
-      imageUrl: `https://placehold.co/100x100.png`, // Always use a placeholder
+      imageUrl: `https://placehold.co/100x100.png`,
       imageHint: "profile person avatar",
       details: details[Math.floor(Math.random() * details.length)],
       locationMatch: Math.random() > 0.5 ? `Active in ${input.originalCity}` : `Potentially linked to ${input.originalCity} region.`,
-      confidenceScore: Math.random() * 0.3 + 0.6, // Simulate a score between 0.6 and 0.9
+      confidenceScore: Math.random() * 0.3 + 0.6, 
     };
   }
 );
@@ -131,17 +143,18 @@ Full Name: {{{fullName}}}
 City/Region: {{{city}}}
 
 Instructions:
-1.  Use the \`searchWebForPersonByNameCity\` tool to get a list of FAKE (simulated) URLs that might contain information about the person.
-2.  For each unique and relevant FAKE URL obtained (maximum of 3-4 diverse URLs), use the \`extractPersonProfileFromUrl\` tool to extract simulated details and create a \`ProbablePersonMatch\` object.
-    *   Ensure each match has a unique placeholder image URL (e.g., \`https://placehold.co/100x100.png\`) and an \`imageHint\` like "profile person avatar".
-    *   Generate plausible but fictional details for each profile.
+1.  Use the \`searchWebForPersonByNameCity\` tool to get a list of FAKE (simulated) URLs. This list may include a conceptual link to "https://whatsmyname.app/".
+2.  For each unique and relevant URL obtained (maximum of 3-4 diverse URLs), use the \`extractPersonProfileFromUrl\` tool.
+    *   If the URL is for "https://whatsmyname.app/", the tool will return a summary of its purpose for username checking. Include this as a "match".
+    *   For other URLs, the tool will extract simulated details for a \`ProbablePersonMatch\` object.
+    *   Ensure each match has a unique placeholder image URL (e.g., \`https://placehold.co/100x100.png\`) and an appropriate \`imageHint\`.
+    *   Generate plausible but fictional details for profiles.
     *   Simulate a \`confidenceScore\` for each match.
-3.  Compile these matches into the \`probableMatches\` array.
-4.  Provide an \`overallSummary\` explaining the simulated search process and findings. Mention that the results are illustrative and based on simulated data.
-5.  List all unique FAKE URLs processed in the \`dataSourcesAnalyzed\` field.
-Do NOT use real people's names or details. All data should be plausible fiction.
+3.  Compile these matches/summaries into the \`probableMatches\` array. Aim for 2-4 diverse entries.
+4.  Provide an \`overallSummary\` explaining the simulated search process. Mention that results are illustrative and based on simulated data, and if WhatsMyName.app was included, explain its conceptual role in username checking.
+5.  List all unique URLs processed in the \`dataSourcesAnalyzed\` field.
+Do NOT use real people's names or details. All data should be plausible fiction, except for the description of WhatsMyName.app's function.
 If no relevant URLs are found by \`searchWebForPersonByNameCity\`, the \`probableMatches\` array can be empty, and the summary should reflect that no simulated data could be generated.
-Focus on creating 2 to 4 diverse, simulated profiles if possible.
 `,
 });
 
@@ -156,11 +169,10 @@ const personIntelFlow = ai.defineFlow(
     if (!output) {
         throw new Error("AI failed to generate a response for person intel search.");
     }
-    // Ensure imageHint is set for all matches if not provided by the model (though the tool should provide it)
     output.probableMatches = output.probableMatches.map(match => ({
       ...match,
-      imageUrl: match.imageUrl || `https://placehold.co/100x100.png`, // Default placeholder
-      imageHint: match.imageHint || "profile person",
+      imageUrl: match.imageUrl || `https://placehold.co/100x100.png`,
+      imageHint: match.imageHint || (match.sourcePlatform?.includes("WhatsMyName") ? "network search tool" : "profile person"),
     }));
     return output;
   }
