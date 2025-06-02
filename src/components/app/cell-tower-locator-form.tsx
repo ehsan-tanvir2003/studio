@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle, Building, Camera } from 'lucide-react';
+import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle } from 'lucide-react';
 import { locateCellTower, type CellTowerLocatorInput } from '@/app/actions';
 import type { CellTowerLocation } from '@/services/unwiredlabs';
 
@@ -48,24 +48,6 @@ export default function CellTowerLocatorForm() {
   const [result, setResult] = useState<CellTowerLocation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [streetViewApiKey, setStreetViewApiKey] = useState<string | null>(null);
-  const [streetViewUrl, setStreetViewUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Fetch API key on client-side to avoid exposing it in initial server render if not careful
-    // This is a simplified approach; for production, consider server-side props or dedicated API route
-    setStreetViewApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_API_KEY || null);
-  }, []);
-
-  useEffect(() => {
-    if (result && streetViewApiKey) {
-      const svUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${result.latitude},${result.longitude}&fov=90&heading=235&pitch=10&key=${streetViewApiKey}`;
-      setStreetViewUrl(svUrl);
-    } else {
-      setStreetViewUrl(null);
-    }
-  }, [result, streetViewApiKey]);
-
 
   const form = useForm<CellTowerFormValues>({
     resolver: zodResolver(formSchema),
@@ -81,7 +63,6 @@ export default function CellTowerLocatorForm() {
     setIsLoading(true);
     setResult(null);
     setError(null);
-    setStreetViewUrl(null);
 
     const inputData: CellTowerLocatorInput = {
       lac: parseInt(values.lac, 10),
@@ -287,35 +268,6 @@ export default function CellTowerLocatorForm() {
                   </span>
                 </div>
               </div>
-
-              {streetViewUrl && streetViewApiKey && (
-                <div className="mt-4">
-                  <h4 className="text-md font-headline text-muted-foreground mb-2 flex items-center"><Camera className="mr-2 h-5 w-5"/>Street View</h4>
-                  <Image
-                    src={streetViewUrl}
-                    alt="Google Street View of the location"
-                    width={600}
-                    height={300}
-                    className="rounded-md border border-border/50 shadow-sm"
-                    data-ai-hint="street view location"
-                  />
-                  <div className="flex items-start text-xs text-muted-foreground/90 mt-2 p-2 bg-muted/30 rounded-md border border-border/20">
-                    <AlertCircle className="mr-2 h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
-                    <span>
-                      Street View imagery at the coordinates. If this shows a "no imagery" placeholder, Google does not have Street View for this exact spot.
-                      Ensure your GOOGLE_API_KEY (or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) in the .env file has the 'Street View Static API' enabled.
-                    </span>
-                  </div>
-                </div>
-              )}
-              {!streetViewApiKey && result && (
-                <div className="flex items-start text-xs text-muted-foreground/90 mt-2 p-2 bg-muted/30 rounded-md border border-border/20">
-                  <AlertCircle className="mr-2 h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                  <span>
-                    Street View could not be loaded. GOOGLE_API_KEY (or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY for client-side access) is not configured or does not have the 'Street View Static API' enabled.
-                  </span>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
