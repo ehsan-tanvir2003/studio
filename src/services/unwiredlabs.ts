@@ -1,0 +1,105 @@
+
+// src/services/unwiredlabs.ts
+'use server';
+
+const UNWIREDLABS_API_URL = 'https://us1.unwiredlabs.com/v2/process.php';
+
+interface UnwiredLabsCell {
+  lac: number;
+  cid: number;
+}
+
+interface UnwiredLabsRequestParams {
+  token: string;
+  radio: 'gsm' | 'umts' | 'lte' | 'cdma';
+  mcc: number;
+  mnc: number;
+  cells: UnwiredLabsCell[];
+  address: 0 | 1; // 0 for no address, 1 for address
+}
+
+interface UnwiredLabsSuccessResponse {
+  status: 'ok';
+  balance: number; // Can also be balance_lac, balance_cell etc.
+  lat: number;
+  lon: number;
+  accuracy: number; // in meters
+  address?: string;
+  // There might be other fields depending on the request
+}
+
+interface UnwiredLabsErrorResponse {
+  status: 'error';
+  message: string;
+  balance?: number;
+}
+
+export type UnwiredLabsResponse = UnwiredLabsSuccessResponse | UnwiredLabsErrorResponse;
+
+export interface CellTowerLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  googleMapsUrl: string;
+}
+
+export async function fetchCellTowerLocation(
+  apiKey: string,
+  mcc: number,
+  mnc: number,
+  lac: number,
+  cellId: number,
+  radioType: 'gsm' | 'umts' | 'lte' | 'cdma' = 'gsm'
+): Promise<CellTowerLocation | { error: string }> {
+  if (!apiKey || apiKey === 'your_unwired_labs_api_key_here') {
+    return { error: 'Unwired Labs API key is not configured. Please set UNWIREDLABS_API_KEY in your .env file.' };
+  }
+
+  const cellsPayload = JSON.stringify([{ lac, cid: cellId }]);
+  const queryParams = new URLSearchParams({
+    token: apiKey,
+    radio: radioType,
+    mcc: mcc.toString(),
+    mnc: mnc.toString(),
+    cells: cellsPayload,
+    address: '0', // We don't need reverse geocoding for this feature
+  });
+
+  try {
+    const response = await fetch(`${UNWIREDLABS_API_URL}?${queryParams.toString()}`);
+    if (!response.ok) {
+      // Try to parse error from Unwired Labs if possible
+      try {
+        const errorData: UnwiredLabsErrorResponse = await response.json();
+        return { error: `API Error: ${errorData.message || response.statusText} (Status: ${response.status})` };
+      } catch (e) {
+        return { error: `API HTTP Error: ${response.statusText} (Status: ${response.status})` };
+      }
+    }
+
+    const data: UnwiredLabsResponse = await response.json();
+
+    if (data.status === 'ok') {
+      const successData = data as UnwiredLabsSuccessResponse;
+      return {
+        latitude: successData.lat,
+        longitude: successData.lon,
+        accuracy: successData.accuracy,
+        googleMapsUrl: `https://www.google.com/maps?q=${successData.lat},${successData.lon}`,
+      };
+    } else {
+      const errorData = data as UnwiredLabsErrorResponse;
+      // User-friendly message for common "no matches" error
+      if (errorData.message && errorData.message.toLowerCase().includes('no matches found')) {
+        return { error: 'No location data found for the provided Cell ID and LAC with the selected operator.' };
+      }
+      return { error: `API Error: ${errorData.message || 'Unknown error from Unwired Labs'}` };
+    }
+  } catch (error) {
+    console.error('Error fetching cell tower location:', error);
+    if (error instanceof Error) {
+      return { error: `Network or unexpected error: ${error.message}` };
+    }
+    return { error: 'An unexpected network error occurred.' };
+  }
+}
