@@ -48,16 +48,17 @@ export async function searchPdlProfiles(
 }
 
 // --- RapidAPI Reverse Image Search ---
-const rapidApiSearchSchema = z.object({
+// Zod schema for the input received by this server action
+const rapidApiActionInputSchema = z.object({
   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
-  apiEndpointUrl: z.string().url( { message: "A valid RapidAPI endpoint URL is required." }),
+  // apiEndpointUrl is no longer received from the client
 });
 
 export async function searchWithRapidApi(
-  imageDataUri: string,
-  apiEndpointUrl: string
+  imageDataUri: string
+  // apiEndpointUrl is no longer a parameter here
 ): Promise<RapidApiImageSearchOutput> {
-  const validationResult = rapidApiSearchSchema.safeParse({ imageDataUri, apiEndpointUrl });
+  const validationResult = rapidApiActionInputSchema.safeParse({ imageDataUri });
   if (!validationResult.success) {
     return {
       success: false,
@@ -65,10 +66,30 @@ export async function searchWithRapidApi(
     };
   }
 
-  const input: RapidApiImageSearchInput = validationResult.data;
+  const host = process.env.RAPIDAPI_HOST;
+  // IMPORTANT: Replace "YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" with the actual API path from RapidAPI documentation.
+  // For example, it might be "/searchByImage", "/upload", or "/reverse-image-search".
+  const path = "/YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE"; 
+
+  if (!host || host.trim() === "") {
+    console.error('[RapidAPI Action] CRITICAL: RAPIDAPI_HOST is not configured in .env file.');
+    return { success: false, error: "RapidAPI Host is not configured on the server. Please check the .env file." };
+  }
+  if (path === "/YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" || path.trim() === "") {
+    console.error('[RapidAPI Action] CRITICAL: The API path for reverse image search is not set in src/app/actions.ts.');
+    return { success: false, error: "The specific RapidAPI endpoint path for reverse image search is not configured in the backend. Please contact support or a developer."};
+  }
+  
+  const constructedApiEndpointUrl = `https://${host}${path}`;
+
+  // This is the input for the Genkit flow, which still expects apiEndpointUrl
+  const flowInput: RapidApiImageSearchInput = { 
+    imageDataUri: validationResult.data.imageDataUri,
+    apiEndpointUrl: constructedApiEndpointUrl
+  };
 
   try {
-    const result = await searchImageWithRapidApi(input);
+    const result = await searchImageWithRapidApi(flowInput);
     return result;
   } catch (error) {
     console.error("Error in searchImageWithRapidApi flow:", error);

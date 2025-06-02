@@ -8,9 +8,6 @@ import type { RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-
 import { searchWithRapidApi } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Camera, Image as ImageIcon, Loader2, Terminal, Info } from "lucide-react";
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function RapidApiFaceSearchPage() {
@@ -18,19 +15,16 @@ export default function RapidApiFaceSearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchedImage, setSearchedImage] = useState<string | null>(null);
-  const [apiEndpointUrl, setApiEndpointUrl] = useState<string>(''); // State for API endpoint URL
+  // API Endpoint URL input is now removed from UI
 
   const handleSearch = async (imageDataUri: string) => {
-    if (!apiEndpointUrl) {
-      setError("Please enter the full RapidAPI Endpoint URL for the reverse image search.");
-      return;
-    }
     setIsLoading(true);
     setResults(null);
     setError(null);
     setSearchedImage(imageDataUri);
     try {
-      const response = await searchWithRapidApi(imageDataUri, apiEndpointUrl);
+      // Call action without apiEndpointUrl, it's now configured in the backend
+      const response = await searchWithRapidApi(imageDataUri);
       if (response.error || !response.success) {
         setError(response.error || response.message || "An unknown error occurred during the search.");
         setResults(null);
@@ -59,29 +53,19 @@ export default function RapidApiFaceSearchPage() {
       <main className="w-full max-w-2xl space-y-8">
         <Card className="bg-card/80 border-border/50 shadow-lg">
             <CardHeader>
-                <CardTitle className="font-headline text-primary">RapidAPI Configuration</CardTitle>
+                <CardTitle className="font-headline text-primary">RapidAPI Configuration Note</CardTitle>
                 <CardDescription className="font-code text-muted-foreground">
-                    Enter the specific RapidAPI endpoint URL you want to use for reverse image search.
-                    Your RAPIDAPI_KEY and RAPIDAPI_HOST (now set to real-time-image-search.p.rapidapi.com) 
-                    must be correctly configured in the .env file.
+                    The RapidAPI host is set to <strong>real-time-image-search.p.rapidapi.com</strong>.
+                    Your RAPIDAPI_KEY must be correctly configured in the .env file.
+                    The specific API path for reverse image search (e.g., /upload, /searchByImage) needs to be set
+                    in the backend code at <code>src/app/actions.ts</code>.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-2">
-                    <Label htmlFor="apiEndpointUrl" className="font-code text-muted-foreground">Full RapidAPI Endpoint URL for Reverse Image Search</Label>
-                    <Input
-                        id="apiEndpointUrl"
-                        type="url"
-                        placeholder="https://real-time-image-search.p.rapidapi.com/REVERSE_IMAGE_SEARCH_PATH"
-                        value={apiEndpointUrl}
-                        onChange={(e) => setApiEndpointUrl(e.target.value)}
-                        className="font-code bg-input/50 focus:bg-input border-border focus:border-primary"
-                        disabled={isLoading}
-                    />
-                     <p className="text-xs font-code text-muted-foreground/70">
-                        Find the correct endpoint path for *reverse image search* or *image upload search* from the API's documentation on RapidAPI. The URL you provided previously was for a text-based search.
-                    </p>
-                </div>
+                 <p className="text-xs font-code text-muted-foreground/70">
+                    Please ensure the path in <code>src/app/actions.ts</code> is correct for the 
+                    <strong>reverse image search</strong> functionality of the API.
+                </p>
             </CardContent>
         </Card>
 
@@ -105,8 +89,8 @@ export default function RapidApiFaceSearchPage() {
             <AlertTitle className="font-headline text-destructive">Search Error</AlertTitle>
             <AlertDescription className="font-code text-destructive/90">
               {error}
-               {!error.toLowerCase().includes("rapidapi key") && !error.toLowerCase().includes("rapidapi host") && !error.toLowerCase().includes("endpoint url") && (
-                 <p className="mt-2 text-xs">Ensure the RapidAPI Endpoint URL is correct for reverse image search and your RAPIDAPI_KEY/RAPIDAPI_HOST in the .env file are valid for this endpoint.</p>
+               {!error.toLowerCase().includes("rapidapi key") && !error.toLowerCase().includes("rapidapi host") && (
+                 <p className="mt-2 text-xs">Ensure your RAPIDAPI_KEY in the .env file is valid and the API path in <code>src/app/actions.ts</code> is correct for reverse image search.</p>
                )}
             </AlertDescription>
           </Alert>
@@ -117,7 +101,7 @@ export default function RapidApiFaceSearchPage() {
         {!results && !isLoading && !error && (
              <div className="text-center py-8 text-muted-foreground font-code">
               <Info className="mx-auto h-10 w-10 mb-3 text-primary/50"/>
-              Upload an image and provide the full RapidAPI endpoint URL for reverse image search to see results.
+              Upload an image to see results. Check backend configuration if issues persist.
             </div>
         )}
       </main>
