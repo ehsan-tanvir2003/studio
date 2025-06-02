@@ -1,7 +1,8 @@
 
 'use server';
 /**
- * @fileOverview OSINT-style search for individuals based on name and city.
+ * @fileOverview OSINT-style search for individuals based on name and city,
+ * focusing on simulating a Google search.
  *
  * - personIntelSearch - A function that handles the person intelligence search.
  * - PersonIntelInput - The input type for the personIntelSearch function.
@@ -18,21 +19,21 @@ const PersonIntelInputSchema = z.object({
 export type PersonIntelInput = z.infer<typeof PersonIntelInputSchema>;
 
 const ProbablePersonMatchSchema = z.object({
-  name: z.string().describe('The full name of the potential match, or a description of the search type (e.g., "Username Search via WhatsMyName", "General Web Search Summary").'),
-  sourcePlatform: z.string().describe('The simulated platform or search method (e.g., Facebook, LinkedIn, News Article, WhatsMyName.app, Simulated Search Engine).'),
-  profileUrl: z.string().url().optional().describe('A direct URL to the simulated profile, source page, relevant tool (e.g., https://whatsmyname.app/), or search engine query.'),
-  imageUrl: z.string().url().describe('URL of a representative placeholder image for the person or concept (e.g., https://placehold.co/100x100.png).'),
-  imageHint: z.string().default('profile person').describe('A hint for the placeholder image, e.g., "profile person", "network search", "search results".'),
-  details: z.string().describe('A brief summary of relevant information found or a description of what the source offers or might reveal.'),
-  locationMatch: z.string().optional().describe('How the found location data relates to the input city (e.g., "Exact Match", "Nearby City", "Region Mentioned", "N/A for username search", "N/A for general search summary").'),
-  confidenceScore: z.number().min(0).max(1).optional().describe('A simulated confidence score (0.0 to 1.0) of this match being correct or relevant.')
+  name: z.string().describe('A description of the search performed (e.g., "Google Search for...").'),
+  sourcePlatform: z.string().describe('The search method (e.g., "Google Search Engine").'),
+  profileUrl: z.string().url().optional().describe('The direct URL to the search query (e.g., a Google search URL).'),
+  imageUrl: z.string().url().describe('URL of a representative placeholder image (e.g., https://placehold.co/100x100.png).'),
+  imageHint: z.string().default('search results').describe('A hint for the placeholder image, e.g., "search results", "google logo".'),
+  details: z.string().describe('A summary of the types of information one might find via this search, and a suggestion to visit the link for actual results.'),
+  locationMatch: z.string().optional().describe('Indicates this is a general search, e.g., "N/A - General Search".'),
+  confidenceScore: z.number().min(0).max(1).optional().describe('A simulated confidence score, less relevant for a general search link but kept for schema consistency.')
 });
 export type ProbablePersonMatch = z.infer<typeof ProbablePersonMatchSchema>;
 
 const PersonIntelOutputSchema = z.object({
-  overallSummary: z.string().describe('A high-level summary of the search findings and methodology, including insights from simulated search engine results.'),
-  probableMatches: z.array(ProbablePersonMatchSchema).describe('A list of probable individuals, OSINT tool summaries, or search engine result summaries matching the search criteria. Aim for 2-4 diverse simulated entries.'),
-  dataSourcesAnalyzed: z.array(z.string().url()).describe('A list of unique, simulated URLs that were analyzed to generate the matches (e.g., fake social media search result pages, mock news article links, https://whatsmyname.app/, simulated search engine query URLs).'),
+  overallSummary: z.string().describe('A high-level summary of the search methodology (i.e., a Google search was simulated).'),
+  probableMatches: z.array(ProbablePersonMatchSchema).length(1).describe('An array containing a single entry representing the simulated Google search.'),
+  dataSourcesAnalyzed: z.array(z.string().url()).length(1).describe('An array containing the single Google search URL that was generated.'),
 });
 export type PersonIntelOutput = z.infer<typeof PersonIntelOutputSchema>;
 
@@ -40,144 +41,80 @@ export async function personIntelSearch(input: PersonIntelInput): Promise<Person
   return personIntelFlow(input);
 }
 
-// Simulated Tool: Search Web for Person (including WhatsMyName.app and a simulated search engine query)
-const searchWebForPersonByNameCity = ai.defineTool(
+// Simulated Tool: Generate Google Search URL
+const generateGoogleSearchUrl = ai.defineTool(
   {
-    name: 'searchWebForPersonByNameCity',
-    description: 'Simulates searching the web (social media, public records, news) for a person. Returns a list of plausible-sounding FAKE URLs, a link to "https://whatsmyname.app/", and a simulated search engine query URL.',
+    name: 'generateGoogleSearchUrl',
+    description: 'Generates a Google search URL for a given person\'s full name and city.',
     inputSchema: z.object({
       fullName: z.string(),
       city: z.string(),
     }),
-    outputSchema: z.array(z.string().url()).describe('An array of 2 to 5 FAKE URLs (e.g., fake social media profiles, mock news), "https://whatsmyname.app/", and a simulated search engine query URL. These are for simulation.'),
+    outputSchema: z.object({
+        searchUrl: z.string().url().describe("The Google search URL.")
+    }),
   },
   async (input) => {
-    console.log(`Simulating web search for: ${input.fullName} in ${input.city}, including WhatsMyName.app and a search engine query.`);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-    const nameSlug = input.fullName.toLowerCase().replace(/\s+/g, '.');
-    const citySlug = input.city.toLowerCase().replace(/\s+/g, '');
+    console.log(`Generating Google search URL for: ${input.fullName} in ${input.city}`);
+    await new Promise(resolve => setTimeout(resolve, 200)); // Simulate brief processing
     const searchQuery = encodeURIComponent(`${input.fullName} ${input.city}`);
-    return [
-      `https://fake-social-platform.example.com/profile/${nameSlug}-${citySlug}`,
-      'https://whatsmyname.app/',
-      `https://localnews.example.org/${citySlug}/article/${nameSlug}-feature`,
-      `https://fake-search-engine.example.com/search?q=${searchQuery}`, // Simulated search engine URL
-      `https://another-social.example.net/users/${nameSlug}`
-    ].slice(0, Math.floor(Math.random() * 2) + 3); // Return 3-4 URLs (will pick some from the above, including the search query)
+    return { searchUrl: `https://www.google.com/search?q=${searchQuery}` };
   }
 );
 
-// Simulated Tool: Extract Profile Information from a URL, Summarize WhatsMyName.app, or Summarize Search Engine Results
-const extractPersonProfileFromUrl = ai.defineTool(
+// Simulated Tool: Summarize Potential Google Search Findings
+const summarizeGoogleSearchPotential = ai.defineTool(
   {
-    name: 'extractPersonProfileFromUrl',
-    description: 'Given a FAKE URL, simulate extracting structured information. If URL is "https://whatsmyname.app/", provide a summary of its purpose. If URL is a "fake-search-engine.example.com" URL, provide a summary of potential findings one might get from such a search. Always provide a placeholder image URL.',
+    name: 'summarizeGoogleSearchPotential',
+    description: 'Given a Google search URL and original query details, provides a summary of potential findings and a placeholder image.',
     inputSchema: z.object({
-      url: z.string().url(),
-      originalFullName: z.string().describe("The original full name used in the search query, for context."),
-      originalCity: z.string().describe("The original city used in the search query, for context."),
+      googleSearchUrl: z.string().url(),
+      originalFullName: z.string().describe("The original full name used in the search query."),
+      originalCity: z.string().describe("The original city used in the search query."),
     }),
     outputSchema: ProbablePersonMatchSchema,
   },
   async (input) => {
-    console.log(`Simulating profile/info extraction from: ${input.url} for ${input.originalFullName}`);
-    await new Promise(resolve => setTimeout(resolve, 700)); 
-
-    if (input.url === 'https://whatsmyname.app/') {
-      const derivedUsername = input.originalFullName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/gi, '');
-      return {
-        name: `Username Search for "${input.originalFullName}"`,
-        sourcePlatform: "WhatsMyName.app (Username Check)",
-        profileUrl: 'https://whatsmyname.app/',
-        imageUrl: `https://placehold.co/100x100.png`,
-        imageHint: "network search tool",
-        details: `This tool, WhatsMyName.app, can be used to check for the existence of a username (e.g., "${derivedUsername}") across many online platforms. To perform a real search, visit the site and enter the desired username. This entry is a conceptual placeholder.`,
-        locationMatch: "N/A (Username search tool)",
-        confidenceScore: 0.55, 
-      };
-    }
-
-    if (input.url.includes('fake-search-engine.example.com')) {
-        return {
-            name: `General Web Search Summary for "${input.originalFullName}" in "${input.originalCity}"`,
-            sourcePlatform: "Simulated Search Engine",
-            profileUrl: input.url, // Link to the simulated search query
-            imageUrl: `https://placehold.co/100x100.png`,
-            imageHint: "search results",
-            details: `A simulated web search for "${input.originalFullName}" in "${input.originalCity}" might reveal:
-- Public records or mentions in local directories.
-- Possible social media profiles (requiring further investigation).
-- News articles or blog posts related to the name in the specified region.
-- Connections to local businesses or community groups.
-This is a general summary; actual results would vary greatly.`,
-            locationMatch: "N/A (General search summary)",
-            confidenceScore: 0.50, // Represents relevance as a general search summary
-        };
-    }
-
-    let platform = "Generic Public Record";
-    if (input.url.includes('fake-social-platform.example.com')) platform = "Fake Social Platform";
-    else if (input.url.includes('another-social.example.net')) platform = "Another Social Net";
-    else if (input.url.includes('localnews.example.org')) platform = "Local News Outlet";
-    
-    const firstNames = ["Alex", "Jamie", "Chris", "Pat", "Jordan"];
-    const lastNames = ["Doe", "Smith", "Garcia", "Miller", "Davis"];
-    const randomFirstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const randomLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    
-    const isOriginalName = Math.random() > 0.3;
-    const extractedName = isOriginalName ? input.originalFullName : `${randomFirstName} ${randomLastName}`;
-
-    const occupations = ["Software Engineer", "Graphic Designer", "Project Manager", "Marketing Specialist", "Local Business Owner", "Teacher"];
-    const details = [
-      `Works as a ${occupations[Math.floor(Math.random() * occupations.length)]} in ${input.originalCity}. Known for community involvement.`,
-      `Studied at ${input.originalCity} University. Enjoys hiking and photography.`,
-      `Recently moved to ${input.originalCity}. Previously lived in a nearby town.`,
-      `Founder of a small startup focused on local services.`,
-      `Mentioned in an article about local entrepreneurs in ${input.originalCity}.`
-    ];
+    console.log(`Summarizing potential Google search for: ${input.originalFullName} in ${input.originalCity}`);
+    await new Promise(resolve => setTimeout(resolve, 300)); 
 
     return {
-      name: extractedName,
-      sourcePlatform: platform,
-      profileUrl: input.url,
+      name: `Google Search for "${input.originalFullName}" in "${input.originalCity}"`,
+      sourcePlatform: "Google Search Engine",
+      profileUrl: input.googleSearchUrl,
       imageUrl: `https://placehold.co/100x100.png`,
-      imageHint: "profile person avatar",
-      details: details[Math.floor(Math.random() * details.length)],
-      locationMatch: Math.random() > 0.5 ? `Active in ${input.originalCity}` : `Potentially linked to ${input.originalCity} region.`,
-      confidenceScore: Math.random() * 0.3 + 0.6, 
+      imageHint: "search results",
+      details: `A Google search for "${input.originalFullName}" in "${input.originalCity}" may reveal various public information. This could include:
+- Profiles on social media platforms (e.g., LinkedIn, Facebook, Twitter, Instagram).
+- Mentions in news articles, blogs, or public forums.
+- Public records, official documents, or directory listings.
+- Images and videos related to the individual.
+- Professional affiliations or business websites.
+To see actual live results, please visit the provided Google search link. The information found can vary greatly based on the individual's online presence.`,
+      locationMatch: "N/A - General Search",
+      confidenceScore: 0.50, // Represents relevance as a general search summary link
     };
   }
 );
 
 const prompt = ai.definePrompt({
-  name: 'personIntelPrompt',
-  tools: [searchWebForPersonByNameCity, extractPersonProfileFromUrl],
+  name: 'personGoogleSearchPrompt',
+  tools: [generateGoogleSearchUrl, summarizeGoogleSearchPotential],
   input: {schema: PersonIntelInputSchema},
   output: {schema: PersonIntelOutputSchema},
-  prompt: `You are an OSINT (Open Source Intelligence) analyst. Your task is to find information about a person based on their full name and city.
+  prompt: `You are an OSINT assistant. Your task is to simulate preparing a Google search for a person based on their full name and city, and then summarize what such a search might generally yield.
 
 Search criteria:
 Full Name: {{{fullName}}}
 City/Region: {{{city}}}
 
 Instructions:
-1.  Use the \`searchWebForPersonByNameCity\` tool to get a list of FAKE (simulated) URLs. This list may include:
-    *   Conceptual links to social media or news articles.
-    *   A conceptual link to "https://whatsmyname.app/".
-    *   A simulated search engine query URL (e.g., from fake-search-engine.example.com).
-2.  For each unique and relevant URL obtained (maximum of 3-4 diverse URLs), use the \`extractPersonProfileFromUrl\` tool.
-    *   If the URL is for "https://whatsmyname.app/", the tool will return a summary of its purpose for username checking. Include this as a "match".
-    *   If the URL is a simulated search engine query, the tool will return a general summary of potential findings from such a search. Include this as a "match".
-    *   For other URLs, the tool will extract simulated details for a \`ProbablePersonMatch\` object.
-    *   Ensure each match has a unique placeholder image URL (e.g., \`https://placehold.co/100x100.png\`) and an appropriate \`imageHint\`.
-    *   Generate plausible but fictional details for profiles.
-    *   Simulate a \`confidenceScore\` for each match.
-3.  Compile these matches/summaries into the \`probableMatches\` array. Aim for 2-4 diverse entries, including any search engine or WhatsMyName summaries.
-4.  Provide an \`overallSummary\` explaining the simulated search process. Mention that results are illustrative and based on simulated data. If WhatsMyName.app was included, explain its conceptual role. If a simulated search engine query was processed, briefly mention what insights a general web search might provide.
-5.  List all unique URLs processed in the \`dataSourcesAnalyzed\` field.
-Do NOT use real people's names or details. All data should be plausible fiction, except for the description of WhatsMyName.app's function and general statements about search engine use.
-If no relevant URLs are found by \`searchWebForPersonByNameCity\`, the \`probableMatches\` array can be empty, and the summary should reflect that no simulated data could be generated.
+1.  Use the \`generateGoogleSearchUrl\` tool to create a Google search URL for the provided full name and city.
+2.  Use the \`summarizeGoogleSearchPotential\` tool with the generated Google search URL and the original full name and city. This tool will return a \`ProbablePersonMatch\` object describing the potential findings from this Google search.
+3.  The \`probableMatches\` array in the output should contain *only this single entry* returned by \`summarizeGoogleSearchPotential\`.
+4.  The \`dataSourcesAnalyzed\` array should contain *only the generated Google search URL*.
+5.  For the \`overallSummary\`, provide a brief statement like: "A Google search link has been prepared for the specified individual. Visit the link to explore potential public information. Results depend on the individual's online footprint."
+Ensure the output strictly adheres to the PersonIntelOutputSchema, particularly the requirements for \`probableMatches\` and \`dataSourcesAnalyzed\` to have only one entry.
 `,
 });
 
@@ -192,11 +129,14 @@ const personIntelFlow = ai.defineFlow(
     if (!output) {
         throw new Error("AI failed to generate a response for person intel search.");
     }
-    output.probableMatches = output.probableMatches.map(match => ({
-      ...match,
-      imageUrl: match.imageUrl || `https://placehold.co/100x100.png`,
-      imageHint: match.imageHint || (match.sourcePlatform?.includes("WhatsMyName") ? "network search tool" : (match.sourcePlatform?.includes("Search Engine") ? "search results" : "profile person")),
-    }));
+    // Ensure the single probable match has default image values if not set by the tool (though summarizeGoogleSearchPotential should set them)
+    if (output.probableMatches && output.probableMatches.length > 0) {
+        output.probableMatches[0] = {
+            ...output.probableMatches[0],
+            imageUrl: output.probableMatches[0].imageUrl || `https://placehold.co/100x100.png`,
+            imageHint: output.probableMatches[0].imageHint || "search results",
+        };
+    }
     return output;
   }
 );
