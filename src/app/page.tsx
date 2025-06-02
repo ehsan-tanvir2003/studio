@@ -83,10 +83,14 @@ export default function InfoSleuthPage() {
         </div>
       </main>
 
-      <footer className="mt-16 text-center text-muted-foreground text-xs sm:text-sm">
+      <footer className="mt-16 text-center text-muted-foreground text-xs sm:text-sm space-y-1">
         <p>&copy; {new Date().getFullYear()} InfoSleuth. All rights reserved.</p>
         <p>Information is gathered from publicly available sources and is for informational purposes only.</p>
         <p>Cell Tower Location data provided by Unwired Labs.</p>
+        <Separator className="my-3 w-1/2 mx-auto" />
+        <p>Developed By Flg Offr Ehsan</p>
+        <p>Bangladesh Air Force</p>
+        <p>Technical Support Lt Jabid Hasan</p>
       </footer>
     </div>
   );
