@@ -11,7 +11,7 @@ import { Terminal, ScanEye, UserSearch, FileScan, Network, ShieldCheck, Loader2,
 
 const scanningIcons = [
   UserSearch,
-  DatabaseZap, // Changed icon to reflect data search
+  DatabaseZap, 
   FileScan,
   Network,
   ShieldCheck,
@@ -63,7 +63,7 @@ export default function InfoSleuthPage() {
         <ScanEye className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">InfoSleuth</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          PeopleDataLabs Intel Analysis
+          PeopleDataLabs Profile Enrichment
         </p>
       </header>
 
@@ -93,9 +93,9 @@ export default function InfoSleuthPage() {
                     ))}
                 </div>
                 <p className="text-lg text-primary font-code font-medium">
-                  [QUERYING_PEOPLEDATALABS_DATABASE...]
+                  [ENRICHING_PROFILE_FROM_PEOPLEDATALABS...]
                 </p>
-                <p className="text-sm text-muted-foreground font-code">Cross-referencing data streams // Please wait...</p>
+                <p className="text-sm text-muted-foreground font-code">Fetching detailed information // Please wait...</p>
                  <Loader2 className="w-6 h-6 text-muted-foreground animate-spin"/>
               </div>
             </div>
@@ -107,5 +107,4 @@ export default function InfoSleuthPage() {
     </div>
   );
 }
-
     

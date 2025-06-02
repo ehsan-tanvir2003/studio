@@ -48,11 +48,11 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-lg font-headline text-primary flex items-center">
-                <UserSearch className="mr-2 h-5 w-5" /> Target Full Name
+                <UserSearch className="mr-2 h-5 w-5" /> Person's Full Name
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="[Enter Full Name e.g., Alex Doe]" 
+                  placeholder="[Full Name of the Individual]" 
                   {...field} 
                   className="text-base h-12 font-code bg-input/50 focus:bg-input border-border focus:border-primary"
                   aria-describedby="fullname-description"
@@ -60,7 +60,7 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
                 />
               </FormControl>
               <FormDescription id="fullname-description" className="text-sm font-code text-muted-foreground/80">
-                Enter the full name of the individual.
+                Provide the full name of the person whose profile you want to enrich.
               </FormDescription>
               <FormMessage className="font-code text-destructive/80" />
             </FormItem>
@@ -72,11 +72,11 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-lg font-headline text-primary flex items-center">
-                <MapPinIcon className="mr-2 h-5 w-5" /> City / Region
+                <MapPinIcon className="mr-2 h-5 w-5" /> Person's City / Region
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="[Enter City or Region e.g., New York]" 
+                  placeholder="[City/Region for Context e.g., London]" 
                   {...field} 
                   className="text-base h-12 font-code bg-input/50 focus:bg-input border-border focus:border-primary"
                   aria-describedby="city-description"
@@ -84,7 +84,7 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
                 />
               </FormControl>
               <FormDescription id="city-description" className="text-sm font-code text-muted-foreground/80">
-                Specify the city or general region for a focused search.
+                Specify the person's city or general region to help identify the correct profile.
               </FormDescription>
               <FormMessage className="font-code text-destructive/80" />
             </FormItem>
@@ -94,12 +94,12 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              INITIATING_DEEP_SCAN...
+              Enriching Profile...
             </>
           ) : (
             <>
               <Search className="mr-2 h-5 w-5" />
-              [Execute Intel Search]
+              [Enrich Profile]
             </>
           )}
         </Button>
@@ -107,5 +107,4 @@ export default function PersonSearchForm({ onSubmit, isLoading }: PersonSearchFo
     </Form>
   );
 }
-
     
