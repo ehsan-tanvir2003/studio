@@ -211,8 +211,19 @@ export default function CellTowerLocatorForm() {
                   rel="noopener noreferrer"
                   className="ml-1 text-accent hover:underline break-all"
                 >
-                  View on Map
+                  View on Map (New Tab)
                 </a>
+              </div>
+              <div className="mt-4">
+                <iframe
+                  title="Cell Tower Location Map"
+                  width="100%"
+                  height="300"
+                  loading="lazy"
+                  allowFullScreen
+                  src={`${result.googleMapsUrl.replace('?q=', '?hl=en&q=')}&output=embed&z=15`}
+                  className="rounded-md border border-border shadow-sm"
+                ></iframe>
               </div>
             </CardContent>
           </Card>
@@ -221,4 +232,3 @@ export default function CellTowerLocatorForm() {
     </Card>
   );
 }
-
