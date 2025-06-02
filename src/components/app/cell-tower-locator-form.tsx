@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma } from 'lucide-react';
+import { MapPin, RadioTower, Loader2, Search, Link as LinkIcon, CheckCircle, Home, Sigma, AlertCircle } from 'lucide-react';
 import { locateCellTower, type CellTowerLocatorInput } from '@/app/actions';
 import type { CellTowerLocation } from '@/services/unwiredlabs';
 
@@ -30,6 +30,18 @@ const formSchema = z.object({
 });
 
 type CellTowerFormValues = z.infer<typeof formSchema>;
+
+function getZoomLevel(accuracy: number): number {
+  if (accuracy <= 50) return 19;
+  if (accuracy <= 100) return 18;
+  if (accuracy <= 250) return 17;
+  if (accuracy <= 500) return 16;
+  if (accuracy <= 1000) return 15;
+  if (accuracy <= 2500) return 14;
+  if (accuracy <= 5000) return 13;
+  if (accuracy <= 10000) return 12;
+  return 11;
+}
 
 export default function CellTowerLocatorForm() {
   const [result, setResult] = useState<CellTowerLocation | null>(null);
@@ -220,9 +232,15 @@ export default function CellTowerLocatorForm() {
                   height="300"
                   loading="lazy"
                   allowFullScreen
-                  src={`${result.googleMapsUrl.replace('?q=', '?hl=en&q=')}&output=embed&z=15`}
+                  src={`${result.googleMapsUrl.replace('?q=', '?hl=en&q=')}&output=embed&z=${getZoomLevel(result.accuracy)}`}
                   className="rounded-md border border-border/50 shadow-sm"
                 ></iframe>
+                 <div className="flex items-start text-xs text-muted-foreground/90 mt-2 p-2 bg-muted/30 rounded-md border border-border/20">
+                  <AlertCircle className="mr-2 h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+                  <span>
+                    The tower's approximate location is marked. It is estimated to be within a <strong>{result.accuracy} meter radius</strong> of this point. The map zoom level has been adjusted to reflect this accuracy.
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -231,3 +249,4 @@ export default function CellTowerLocatorForm() {
     </Card>
   );
 }
+
