@@ -2,47 +2,48 @@
 // src/app/actions.ts
 "use server";
 
-import { numberScan, type NumberScanOutput, type NumberScanInput } from '@/ai/flows/number-scan';
+import { personIntelSearch, type PersonIntelOutput, type PersonIntelInput } from '@/ai/flows/person-intel-flow'; // Updated import
 import { fetchCellTowerLocation, type CellTowerLocation } from '@/services/unwiredlabs';
 import * as z from 'zod';
 
-// --- Phone Number Scan ---
-const phoneNumberSchema = z.string()
-  .min(1, "Phone number is required.")
-  .regex(/^(?:\+8801|8801|01)[13-9]\d{8}$/, "Please enter a valid Bangladeshi phone number (e.g., 01712345678 or +8801712345678).");
+// --- Person Intel Search (Previously Phone Number Scan) ---
+const personSearchSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters long.").max(100, "Full name is too long."),
+  city: z.string().min(2, "City name must be at least 2 characters long.").max(100, "City name is too long."),
+});
 
-export async function performNumberScan(phoneNumber: string): Promise<NumberScanOutput | { error: string }> {
-  const validationResult = phoneNumberSchema.safeParse(phoneNumber);
+export async function performPersonSearch(
+  fullName: string, 
+  city: string
+): Promise<PersonIntelOutput | { error: string }> {
+  const validationResult = personSearchSchema.safeParse({ fullName, city });
   if (!validationResult.success) {
-    return { error: validationResult.error.errors[0].message };
+    return { error: validationResult.error.errors.map(e => e.message).join(', ') };
   }
 
-  const input: NumberScanInput = { phoneNumber: validationResult.data };
+  const input: PersonIntelInput = validationResult.data;
 
   try {
-    const result = await numberScan(input);
+    const result = await personIntelSearch(input);
     return {
-      summary: result.summary || "No specific summary could be generated for this number.",
-      sources: result.sources || [],
-      associatedNames: result.associatedNames || [],
-      potentialLocations: result.potentialLocations || [],
-      socialMediaProfiles: result.socialMediaProfiles || [],
-      businessListings: result.businessListings || []
+      overallSummary: result.overallSummary || "No specific summary could be generated.",
+      probableMatches: result.probableMatches || [],
+      dataSourcesAnalyzed: result.dataSourcesAnalyzed || [],
     };
   } catch (error) {
-    console.error("Error in numberScan AI flow:", error);
+    console.error("Error in personIntelSearch AI flow:", error);
     if (error instanceof Error) {
         if (error.message.includes("503") || error.message.toLowerCase().includes("model is overloaded") || error.message.toLowerCase().includes("service unavailable")) {
             return { error: "The AI service is temporarily busy or unavailable. Please try again in a few moments." };
         }
         return { error: `AI processing failed: ${error.message}` };
     }
-    return { error: "An unexpected error occurred during the AI scan." };
+    return { error: "An unexpected error occurred during the AI search." };
   }
 }
 
 // --- Cell Tower Locator ---
-const BANGLADESH_MCC = 470; // Moved to be a local constant
+const BANGLADESH_MCC = 470; 
 
 const cellTowerLocatorSchema = z.object({
   lac: z.coerce.number().int().positive("LAC must be a positive integer."),
@@ -68,7 +69,6 @@ export async function locateCellTower(
     return { error: "Service configuration error: API key missing." };
   }
   
-  // Ensure mnc is a number for the service call
   const mncNumber = parseInt(mnc, 10);
   if (isNaN(mncNumber)) {
       return { error: "Invalid operator MNC."}
@@ -77,3 +77,4 @@ export async function locateCellTower(
   return fetchCellTowerLocation(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId);
 }
 
+    

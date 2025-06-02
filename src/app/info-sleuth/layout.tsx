@@ -2,8 +2,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'InfoSleuth - Phone Number Intelligence',
-  description: 'Gather intelligence about mobile numbers from public sources. OSINT tool for phone number analysis.',
+  title: 'InfoSleuth - Person Intel Analysis',
+  description: 'Gather OSINT about individuals based on name and city. Illustrative tool.',
 };
 
 export default function InfoSleuthLayout({
@@ -13,3 +13,5 @@ export default function InfoSleuthLayout({
 }) {
   return <>{children}</>;
 }
+
+    
