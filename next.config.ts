@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/maps/api/streetview/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org', // Added wikimedia
+        port: '',
+        pathname: '/**',
+      },
       // Add other potential hostnames if your chosen RapidAPI service
       // returns image thumbnails from specific domains.
       // Example:
