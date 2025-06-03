@@ -2,36 +2,71 @@
 "use client";
 
 import { useState } from 'react';
-import PersonSearchForm from '@/components/app/person-search-form';
-import PdlResultsDisplay from '@/components/app/pdl-results-display';
-import type { PdlPersonSearchOutput } from '@/ai/flows/pdl-person-search-flow';
-import { searchPdlProfiles } from '@/app/actions';
+import FaceUploadForm from '@/components/app/face-upload-form';
+import FaceCheckResultsDisplay from '@/components/app/face-check-results-display';
+import type { FaceCheckOutput } from '@/ai/flows/face-check-flow';
+import { searchFaceWithFaceCheckAction } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, Search, Users, Loader2 } from "lucide-react";
+import { ScanFace, Terminal, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-export default function InfoSleuthPage() {
-  const [results, setResults] = useState<PdlPersonSearchOutput | null>(null);
+export default function FaceRecognitionPage() {
+  const [results, setResults] = useState<FaceCheckOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState<{fullName: string, location: string} | null>(null);
+  const [searchedImage, setSearchedImage] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const handleSearch = async (fullName: string, location: string) => {
+  const handleSearch = async (imageDataUri: string) => {
     setIsLoading(true);
     setResults(null);
     setError(null);
-    setSearchQuery({fullName, location});
+    setSearchedImage(imageDataUri);
+
     try {
-      const response = await searchPdlProfiles(fullName, location, 10); // Fetch 10 results
-      if (response.error) {
-        setError(response.error);
+      const response = await searchFaceWithFaceCheckAction(imageDataUri);
+      if (!response.success && (response.error || response.message)) {
+        const errorMessage = response.error || response.message || "FaceCheck.ID API request failed.";
+        setError(errorMessage);
         setResults(null);
-      } else {
+        toast({
+          variant: "destructive",
+          title: "FaceCheck.ID Error",
+          description: errorMessage,
+        });
+      } else if (!response.success) {
+        setError("An unknown error occurred with FaceCheck.ID.");
+        setResults(null);
+         toast({
+          variant: "destructive",
+          title: "FaceCheck.ID Error",
+          description: "An unknown error occurred.",
+        });
+      }
+      else {
         setResults(response);
+        if(response.items_count === 0) {
+            toast({
+                title: "No Matches Found",
+                description: "FaceCheck.ID did not find any matches for the uploaded image.",
+            });
+        } else {
+             toast({
+                title: "Search Complete",
+                description: `FaceCheck.ID found ${response.items_count} potential match(es).`,
+            });
+        }
       }
     } catch (e) {
-      setError("An unexpected error occurred while initiating the PDL search.");
+      const errMessage = e instanceof Error ? e.message : "An unexpected error occurred.";
+      setError(errMessage);
       console.error(e);
       setResults(null);
+      toast({
+        variant: "destructive",
+        title: "Search Exception",
+        description: errMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -40,27 +75,18 @@ export default function InfoSleuthPage() {
   return (
     <div className="min-h-full flex flex-col items-center py-8 px-4">
       <header className="mb-10 sm:mb-12 text-center">
-        <Users className="mx-auto h-16 w-16 text-primary mb-4" />
-        <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">InfoSleuth - People Data Search</h1>
+        <ScanFace className="mx-auto h-16 w-16 text-primary mb-4" />
+        <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Face Recognition Search</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          Search for individuals using PeopleDataLabs
+          Upload an image to find matching faces via FaceCheck.ID
         </p>
       </header>
 
-      <main className="w-full max-w-3xl space-y-12">
+      <main className="w-full max-w-2xl space-y-12">
         <div>
-          <PersonSearchForm 
+          <FaceUploadForm 
             onSubmit={handleSearch} 
             isLoading={isLoading}
-            formTitle="PDL Search Parameters"
-            fullNameLabel="Target Full Name"
-            fullNamePlaceholder="[Enter Full Name to Search PDL]"
-            fullNameDescription="Provide the full name for the PDL search."
-            locationLabel="Location (City/Region/Country)"
-            locationPlaceholder="[e.g., Dhaka, London, or Bangladesh]"
-            locationDescription="Specify a location to refine the PDL search."
-            buttonText="Search PDL"
-            loadingButtonText="Searching PDL Database..."
           />
           
           {isLoading && (
@@ -68,9 +94,9 @@ export default function InfoSleuthPage() {
               <div role="status" className="flex flex-col items-center space-y-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin"/>
                 <p className="text-lg text-primary font-code font-medium">
-                  [QUERYING_PEOPLEDATALABS_DATABASE...]
+                  [QUERYING_FACECHECK.ID_DATABASE...]
                 </p>
-                <p className="text-sm text-muted-foreground font-code">Searching for: {searchQuery?.fullName} in {searchQuery?.location}</p>
+                <p className="text-sm text-muted-foreground font-code">Please wait while the image is processed.</p>
               </div>
             </div>
           )}
@@ -81,12 +107,11 @@ export default function InfoSleuthPage() {
               <AlertTitle className="font-headline text-destructive">Search Error</AlertTitle>
               <AlertDescription className="font-code text-destructive/90">
                 {error}
-                {results?.pdlQuery && <p className="mt-2 text-xs">PDL Query Attempted: {results.pdlQuery}</p>}
               </AlertDescription>
             </Alert>
           )}
           
-          {results && !isLoading && !error && <PdlResultsDisplay results={results} />}
+          {results && !isLoading && <FaceCheckResultsDisplay results={results} searchedImage={searchedImage} />}
         </div>
       </main>
     </div>

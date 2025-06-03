@@ -1,15 +1,10 @@
+
 "use client";
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, Search, Video } from 'lucide-react'; // Removed Camera
-import type { Metadata } from 'next';
-import * as React from 'react'; // Import React
-
-// export const metadata: Metadata = { // Metadata should be defined in layout.tsx or at a higher level for client components
-//   title: 'Intel Tools Hub | OSINT Toolkit',
-//   description: 'Central hub for accessing various OSINT tools like PDL People Search and Cell Locator.',
-// };
+import { ArrowRight, RadioTower, Binary, ScanFace, Video } from 'lucide-react'; // Used ScanFace
+import * as React from 'react'; 
 
 export default function HubPage() {
   const [currentTime, setCurrentTime] = React.useState('');
@@ -29,19 +24,19 @@ export default function HubPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl"> {/* Adjusted grid for 3 items */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
         <Link href="/info-sleuth" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-primary/30 hover:border-primary/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-primary/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-2xl sm:text-3xl font-headline text-primary flex items-center">
-                  <Search className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> 
-                  InfoSleuth PDL
+                  <ScanFace className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> 
+                  Face Search
                 </CardTitle>
                 <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
               </div>
               <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
-                Leverage PeopleDataLabs to search for professional profiles based on name and location.
+                Upload an image to search for matching faces using FaceCheck.ID.
               </CardDescription>
             </CardHeader>
             <CardContent>

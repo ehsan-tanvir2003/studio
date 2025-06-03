@@ -1,14 +1,14 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Search, Video } from 'lucide-react'; // Removed Camera icon
+import { Home, RadioTower, Binary, ScanFace, Video } from 'lucide-react'; // Used ScanFace
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
-  { href: '/info-sleuth', label: 'InfoSleuth', icon: Search }, 
-  // { href: '/face-search', label: 'Image Search', icon: Camera }, // Removed
+  { href: '/info-sleuth', label: 'Face Search', icon: ScanFace }, // Renamed, points to info-sleuth
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
   { href: '/camera-analyzer', label: 'Live Analyze', icon: Video },
 ];

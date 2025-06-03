@@ -3,12 +3,12 @@
 "use server";
 
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
-// import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow'; // Removed
 import { analyzeCameraFrame, type AnalyzeCameraFrameInput, type AnalyzeCameraFrameOutput } from '@/ai/flows/analyze-camera-frame-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
+import { searchFaceWithFaceCheck, type FaceCheckInput, type FaceCheckOutput } from '@/ai/flows/face-check-flow';
 import * as z from 'zod';
 
-// --- PeopleDataLabs Person Search ---
+// --- PeopleDataLabs Person Search (Retained for potential future use, not primary for InfoSleuth page anymore) ---
 const pdlPersonSearchSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters long.").max(100, "Full name is too long."),
   location: z.string().max(100, "Location hint is too long.").optional().default(""),
@@ -48,53 +48,38 @@ export async function searchPdlProfiles(
   }
 }
 
-// --- RapidAPI Reverse Image Search --- (REMOVED)
-// const rapidApiActionInputSchema = z.object({
-//   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
-// });
+// --- FaceCheck.ID Reverse Image Search ---
+const faceCheckActionInputSchema = z.object({
+  imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
+});
 
-// export async function searchWithRapidApi(
-//   imageDataUri: string
-// ): Promise<RapidApiImageSearchOutput> {
-//   const validationResult = rapidApiActionInputSchema.safeParse({ imageDataUri });
-//   if (!validationResult.success) {
-//     return {
-//       success: false,
-//       error: validationResult.error.errors.map(e => e.message).join(', '),
-//     };
-//   }
-
-//   const host = process.env.RAPIDAPI_HOST;
-//   const path = "/YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE"; // This was a placeholder
-
-//   if (!host || host.trim() === "" || host === "real-time-image-search.p.rapidapi.com") {
-//     console.error('[RapidAPI Action] CRITICAL: RAPIDAPI_HOST is not correctly configured in .env file or is set to a non-functional placeholder for reverse image search.');
-//     return { success: false, error: "RapidAPI Host for reverse image search is not configured correctly on the server. Please check the .env file and ensure it's for a reverse image search API." };
-//   }
-//   if (path === "/YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" || path.trim() === "") {
-//     console.error('[RapidAPI Action] CRITICAL: The API path for reverse image search is not set in src/app/actions.ts.');
-//     return { success: false, error: "The specific RapidAPI endpoint path for reverse image search is not configured in the backend. Please contact support or a developer."};
-//   }
+export async function searchFaceWithFaceCheckAction(
+  imageDataUri: string
+): Promise<FaceCheckOutput> {
+  const validationResult = faceCheckActionInputSchema.safeParse({ imageDataUri });
+  if (!validationResult.success) {
+    return {
+      success: false,
+      error: validationResult.error.errors.map(e => e.message).join(', '),
+    };
+  }
   
-//   const constructedApiEndpointUrl = `https://${host}${path}`;
+  const flowInput: FaceCheckInput = { 
+    imageDataUri: validationResult.data.imageDataUri,
+  };
 
-//   const flowInput: RapidApiImageSearchInput = { 
-//     imageDataUri: validationResult.data.imageDataUri,
-//     apiEndpointUrl: constructedApiEndpointUrl
-//   };
-
-//   try {
-//     const result = await searchImageWithRapidApi(flowInput);
-//     return result;
-//   } catch (error) {
-//     console.error("Error in searchImageWithRapidApi flow:", error);
-//     let errorMessage = "An unexpected error occurred during RapidAPI image search.";
-//     if (error instanceof Error) {
-//       errorMessage = `RapidAPI search failed: ${error.message}`;
-//     }
-//     return { success: false, error: errorMessage };
-//   }
-// }
+  try {
+    const result = await searchFaceWithFaceCheck(flowInput);
+    return result;
+  } catch (error) {
+    console.error("Error in searchFaceWithFaceCheck flow:", error);
+    let errorMessage = "An unexpected error occurred during FaceCheck.ID search.";
+    if (error instanceof Error) {
+      errorMessage = `FaceCheck.ID search failed: ${error.message}`;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
 
 
 // --- Cell Tower Locator (using Unwired Labs) ---
