@@ -25,7 +25,13 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'upload.wikimedia.org', // Added wikimedia
+        hostname: 'upload.wikimedia.org',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'plus.unsplash.com', // Added unsplash
         port: '',
         pathname: '/**',
       },
