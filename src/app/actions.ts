@@ -70,24 +70,20 @@ export async function searchWithRapidApiAction(
     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
   }
 
-  // !!! IMPORTANT: CONFIGURE THE API PATH BELOW !!!
-  // Replace "YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" with the actual path for your chosen RapidAPI endpoint.
-  // For example, if the host is "real-time-image-search.p.rapidapi.com" and the path is "/searchByImage",
-  // then set apiPath = "/searchByImage". Include any default query parameters if the API needs them and they
-  // are not part of the user input (e.g., "/searchByImage?mode=fast").
-  const apiPath = "/search"; // Example: "/searchByImage" or "/reverse-search" - CHECK YOUR API DOCS!
-  // Some APIs might include query parameters in the base path.
-  // The current `real-time-image-search.p.rapidapi.com` uses `/search`
-  // and expects image data as form-data, not in query.
-  // Parameters like `limit`, `size` etc. from the user's example URL (`https://real-time-image-search.p.rapidapi.com/search?query=beach&limit=10...`)
-  // are for TEXT based search. For reverse image search, they usually don't apply or are handled differently.
-
-  if (apiPath === "YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" || apiPath.trim() === "" || !apiPath.startsWith("/")) {
+  // !!! IMPORTANT: VERIFY AND COMPLETE THE API PATH BELOW !!!
+  // The base path from the user is "/face-recognition/v1".
+  // You may need to append a specific sub-path for the actual search operation
+  // (e.g., "/search", "/analyze", "/searchByImage").
+  // CONSULT THE API DOCUMENTATION for api.lelouchsoft.com.
+  const apiPath = "/face-recognition/v1"; // Base path set. Check if a sub-path like '/search' is needed.
+  
+  if (apiPath.trim() === "" || !apiPath.startsWith("/")) {
      console.error("CRITICAL: RapidAPI path is not configured correctly in src/app/actions.ts. Please set 'apiPath'.");
      return { success: false, error: "RapidAPI endpoint path is not configured on the server.", message: "Server configuration error: API path missing."};
   }
   
   const fullApiEndpointUrl = `https://${rapidApiHost}${apiPath}`;
+  console.log(`[RapidAPI Action] Constructed full endpoint URL: ${fullApiEndpointUrl}`);
   
   const flowInput: RapidApiImageSearchInput = { 
     imageDataUri: validationResult.data.imageDataUri,
