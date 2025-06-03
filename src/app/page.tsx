@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, Search, Video } from 'lucide-react'; // Changed ImageSearch to Search
+import { ArrowRight, RadioTower, Binary, ImageUp, Video } from 'lucide-react'; // Changed Search to ImageUp
 import * as React from 'react'; 
 
 export default function HubPage() {
@@ -30,13 +30,13 @@ export default function HubPage() {
             <CardHeader className="flex-grow">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-2xl sm:text-3xl font-headline text-primary flex items-center">
-                  <Search className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> {/* Updated Icon */}
-                  Image Search
+                  <ImageUp className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> {/* Updated Icon */}
+                  Reverse Image Search
                 </CardTitle>
                 <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
               </div>
               <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
-                Upload an image to find similar images using a configured RapidAPI service.
+                Upload an image to find similar images or identify faces using a configured RapidAPI service.
               </CardDescription>
             </CardHeader>
             <CardContent>

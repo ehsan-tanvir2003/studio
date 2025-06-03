@@ -85,7 +85,7 @@ export default function RapidApiImageUploadForm({ onSubmit, isLoading }: RapidAp
           Upload Image for Search
         </CardTitle>
         <CardDescription className="font-code text-muted-foreground/80">
-          Select an image to search with the configured RapidAPI service.
+          Select an image to perform a reverse image search using the configured RapidAPI service.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -135,8 +135,7 @@ export default function RapidApiImageUploadForm({ onSubmit, isLoading }: RapidAp
             <div className="flex items-start text-xs text-muted-foreground/90 mt-1 p-3 bg-muted/30 rounded-md border border-border/20">
               <AlertCircle className="mr-2 h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
               <span>
-                This tool uses a RapidAPI service. Ensure API key, host, and endpoint path (in `src/app/actions.ts`) are correctly configured.
-                The specific API's request format (e.g., form field name for image) and response structure might need adjustments in `src/ai/flows/rapidapi-face-search-flow.ts`.
+                This tool uses a RapidAPI service. Ensure API key (RAPIDAPI_KEY), host (RAPIDAPI_HOST), and endpoint path (in `src/app/actions.ts`) are correctly configured. The specific API's request format (e.g., form field name for image, which is 'source' for face-recognition-api1) and response structure are handled in `src/ai/flows/rapidapi-face-search-flow.ts`.
               </span>
             </div>
 
@@ -148,12 +147,12 @@ export default function RapidApiImageUploadForm({ onSubmit, isLoading }: RapidAp
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  SEARCHING VIA RAPIDAPI...
+                  SEARCHING WITH IMAGE...
                 </>
               ) : (
                 <>
                   <Search className="mr-2 h-5 w-5" />
-                  [Search with RapidAPI]
+                  [Search with Image]
                 </>
               )}
             </Button>

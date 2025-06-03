@@ -1,35 +1,45 @@
 
 "use client";
 
-import type { RapidApiTextImageSearchOutput, RapidApiMatch } from '@/ai/flows/rapidapi-text-image-search-flow'; // Updated import
-import Image from 'next/image';
+import type { RapidApiImageSearchOutput, RapidApiMatch } from '@/ai/flows/rapidapi-face-search-flow'; // Updated import
+import NextImage from 'next/image'; // Renamed to avoid conflict
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, ExternalLink, Info, CameraOff, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
+import { CheckCircle, XCircle, ExternalLink, Info, CameraOff, Image as ImageIconLucide } from 'lucide-react'; 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 interface RapidApiResultsDisplayProps {
-  results: RapidApiTextImageSearchOutput; // Type updated
-  // searchedImage: string | null; // This prop is removed as it's text search now
+  results: RapidApiImageSearchOutput; 
+  searchedImage: string | null; 
 }
 
 const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
   const getScoreBadgeVariant = (score?: number | null) => {
     if (score === null || score === undefined) return "secondary";
-    if (score > 75) return "default"; 
-    if (score > 50) return "secondary";
+    if (score > 0.75 || score > 75) return "default"; // Handle scores as 0-1 or 0-100
+    if (score > 0.50 || score > 50) return "secondary";
     return "destructive";
   };
   
   const getScoreBadgeClass = (score?: number | null) => {
     if (score === null || score === undefined) return "";
-    if (score > 75) return "bg-green-500/80 text-white";
-    if (score > 50) return "bg-yellow-500/80 text-black";
+    if (score > 0.75 || score > 75) return "bg-green-500/80 text-white";
+    if (score > 0.50 || score > 50) return "bg-yellow-500/80 text-black";
     return "bg-red-500/80 text-white";
   }
+  
+  const displayScore = (score?: number | null) => {
+    if (score === null || score === undefined) return "N/A";
+    // If score is between 0 and 1 (likely a percentage), multiply by 100
+    if (score >= 0 && score <= 1 && !Number.isInteger(score)) {
+      return `${(score * 100).toFixed(0)}%`;
+    }
+    return `${Number(score).toFixed(0)}${Number.isInteger(score) && score > 1 ? '%' : ''}`; // Add % if it's likely already a percentage
+  }
+
 
   return (
     <Card className="bg-card/70 border-border/40 shadow-md hover:shadow-primary/20 transition-shadow duration-300 overflow-hidden">
@@ -37,7 +47,7 @@ const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
         <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-3">
           {match.thumbnail ? (
             <a href={match.url} target="_blank" rel="noopener noreferrer" className="block w-full sm:w-[100px] aspect-square flex-shrink-0">
-              <Image
+              <NextImage
                 src={match.thumbnail}
                 alt={match.title || "Match thumbnail"}
                 width={100}
@@ -59,12 +69,12 @@ const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
             </a>
           ) : (
             <div className="w-[100px] h-[100px] bg-muted rounded border border-border flex items-center justify-center flex-shrink-0">
-              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+              <ImageIconLucide className="h-8 w-8 text-muted-foreground" />
             </div>
           )}
           <div className="flex-1 min-w-0">
             {match.title && <p className="text-sm font-semibold text-foreground truncate" title={match.title}>{match.title}</p>}
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
+             <p className="text-xs text-muted-foreground truncate mt-0.5">
               Source: <span className="text-primary">{match.source || 'N/A'}</span>
             </p>
             <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -75,12 +85,12 @@ const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
                 className="text-primary hover:underline break-all"
                 title={match.url}
               >
-                View Image/Page <ExternalLink className="inline h-3 w-3 ml-0.5" />
+                View Details <ExternalLink className="inline h-3 w-3 ml-0.5" />
               </a>
             </p>
             {match.score !== undefined && match.score !== null && (
               <p className="text-sm text-foreground font-semibold mt-1">
-                Score: <Badge variant={getScoreBadgeVariant(match.score)} className={getScoreBadgeClass(match.score)}>{match.score}%</Badge>
+                Score: <Badge variant={getScoreBadgeVariant(match.score)} className={getScoreBadgeClass(match.score)}>{displayScore(match.score)}</Badge>
               </p>
             )}
           </div>
@@ -90,8 +100,7 @@ const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
   );
 };
 
-// Removed searchedImage from props
-export default function RapidApiResultsDisplay({ results }: RapidApiResultsDisplayProps) { 
+export default function RapidApiResultsDisplay({ results, searchedImage }: RapidApiResultsDisplayProps) { 
   if (!results) return null;
 
   return (
@@ -102,16 +111,25 @@ export default function RapidApiResultsDisplay({ results }: RapidApiResultsDispl
             <div className="flex items-center">
               {results.success ? <CheckCircle className="mr-3 h-7 w-7 text-green-500" /> : <XCircle className="mr-3 h-7 w-7 text-destructive" />}
               <CardTitle className="text-xl sm:text-2xl font-headline text-primary">
-                Image Search Results
+                Reverse Image Search Results
               </CardTitle>
             </div>
+             {searchedImage && (
+                <NextImage
+                  src={searchedImage}
+                  alt="Searched image"
+                  width={60}
+                  height={60}
+                  className="rounded-md border-2 border-primary/50 object-contain"
+                  data-ai-hint="searched image"
+                />
+              )}
             {results.success && results.matches && results.matches.length > 0 && (
               <Badge variant="secondary" className="font-code text-base sm:text-lg px-3 py-1 self-start sm:self-center">
                 {results.matches.length} Match(es)
               </Badge>
             )}
           </div>
-          {/* Removed searchedImage preview section */}
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6">
@@ -127,7 +145,6 @@ export default function RapidApiResultsDisplay({ results }: RapidApiResultsDispl
             <ScrollArea className="h-[400px] sm:h-[500px] pr-3">
               <div className="space-y-3">
                 {results.matches.map((match, index) => (
-                  // Ensure a unique key, using URL and index if needed
                   <MatchCard key={`${match.url}-${index}-${match.thumbnail || ''}`} match={match} />
                 ))}
               </div>
@@ -137,7 +154,7 @@ export default function RapidApiResultsDisplay({ results }: RapidApiResultsDispl
           {results.success && (!results.matches || results.matches.length === 0) && (
              <div className="text-center py-8 text-muted-foreground font-code">
               <Info className="mx-auto h-10 w-10 mb-3 text-primary/50"/>
-              {results.message || "No matching images found for your query."}
+              {results.message || "No matching images found for your uploaded image."}
             </div>
           )}
         </CardContent>

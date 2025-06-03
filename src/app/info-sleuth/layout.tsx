@@ -2,11 +2,11 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Image Search | Intel Tools Suite', // Updated title
-  description: 'Search for images using a text query via a RapidAPI service.', // Updated description
+  title: 'Reverse Image Search | Intel Tools Suite', // Updated title
+  description: 'Search with an image to find matches using a RapidAPI service.', // Updated description
 };
 
-export default function TextImageSearchLayout({ // Renamed layout slightly
+export default function ReverseImageSearchLayout({ // Renamed layout
   children,
 }: {
   children: React.ReactNode

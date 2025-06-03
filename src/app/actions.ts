@@ -5,7 +5,7 @@
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { analyzeCameraFrame, type AnalyzeCameraFrameInput, type AnalyzeCameraFrameOutput } from '@/ai/flows/analyze-camera-frame-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
-import { searchImagesWithTextQuery, type RapidApiTextImageSearchInput, type RapidApiTextImageSearchOutput } from '@/ai/flows/rapidapi-text-image-search-flow'; // Updated import
+import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow'; // Updated import
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -48,17 +48,15 @@ export async function searchPdlProfiles(
   }
 }
 
-// --- RapidAPI Text-Based Image Search ---
-const rapidApiTextSearchActionInputSchema = z.object({ // Renamed schema
-  query: z.string().min(1, "Search query cannot be empty.").max(200, "Search query is too long."),
-  limit: z.number().optional().default(10),
+// --- RapidAPI Reverse Image Search ---
+const rapidApiImageSearchActionInputSchema = z.object({
+  imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
 });
 
-export async function searchWithRapidApiAction( // Function name kept same for now, but logic changed
-  query: string,
-  limit?: number
-): Promise<RapidApiTextImageSearchOutput> { // Output type updated
-  const validationResult = rapidApiTextSearchActionInputSchema.safeParse({ query, limit });
+export async function searchWithRapidApiAction(
+  imageDataUri: string
+): Promise<RapidApiImageSearchOutput> {
+  const validationResult = rapidApiImageSearchActionInputSchema.safeParse({ imageDataUri });
   if (!validationResult.success) {
     return {
       success: false,
@@ -67,27 +65,25 @@ export async function searchWithRapidApiAction( // Function name kept same for n
     };
   }
 
-  const rapidApiHost = process.env.RAPIDAPI_HOST; // Should be real-time-image-search.p.rapidapi.com
+  const rapidApiHost = process.env.RAPIDAPI_HOST; // Should be face-recognition-api1.p.rapidapi.com
   if (!rapidApiHost) {
     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
   }
 
-  // This is the specific path for the real-time-image-search API
-  const apiPath = "/search"; 
+  const apiPath = "/detect"; // Endpoint for face-recognition-api1
   
   console.log(`[RapidAPI Action] Constructed full endpoint URL: https://${rapidApiHost}${apiPath}`);
   
-  const flowInput: RapidApiTextImageSearchInput = { 
-    query: validationResult.data.query,
-    limit: validationResult.data.limit,
-    apiEndpointUrl: `https://${rapidApiHost}${apiPath}`, // Pass the full base URL to the flow
+  const flowInput: RapidApiImageSearchInput = { 
+    imageDataUri: validationResult.data.imageDataUri,
+    apiEndpointUrl: `https://${rapidApiHost}${apiPath}`, 
   };
 
   try {
-    const result = await searchImagesWithTextQuery(flowInput); // Calling updated flow
+    const result = await searchImageWithRapidApi(flowInput); // Calling updated flow
     return result;
   } catch (error) {
-    console.error("Error in searchImagesWithTextQuery flow:", error);
+    console.error("Error in searchImageWithRapidApi flow:", error);
     let errorMessage = "An unexpected error occurred during RapidAPI image search.";
     if (error instanceof Error) {
       errorMessage = `RapidAPI image search failed: ${error.message}`;

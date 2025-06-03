@@ -3,12 +3,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Search, Video } from 'lucide-react'; // Changed ImageSearch to Search
+import { Home, RadioTower, Binary, ImageUp, Video } from 'lucide-react'; // Changed Search to ImageUp
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
-  { href: '/info-sleuth', label: 'Image Search', icon: Search }, // Updated icon
+  { href: '/info-sleuth', label: 'Reverse Image', icon: ImageUp }, // Updated icon and label
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
   { href: '/camera-analyzer', label: 'Live Analyze', icon: Video },
 ];

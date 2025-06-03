@@ -33,7 +33,7 @@ const RapidApiMatchSchema = z.object({
   score: z.number().optional().nullable().describe('Confidence score of the match (if provided by API).'),
   thumbnail: z.string().url().optional().nullable().describe('URL of the thumbnail for the match (if provided).'),
   title: z.string().optional().nullable().describe('Title or description of the match (if provided).'),
-  // Add other fields that your chosen RapidAPI endpoint might return
+  source: z.string().optional().nullable().describe('Source website or domain of the image (if provided).'),
 });
 export type RapidApiMatch = z.infer<typeof RapidApiMatchSchema>;
 
@@ -59,7 +59,7 @@ const rapidApiImageSearchFlow = ai.defineFlow(
   async (input) => {
     const rapidApiKey = process.env.RAPIDAPI_KEY;
     const rapidApiHost = process.env.RAPIDAPI_HOST;
-    console.log('[RapidAPI Flow] Invoked.');
+    console.log('[RapidAPI Reverse Image Search Flow] Invoked.');
 
     if (!rapidApiKey || rapidApiKey.trim() === "" || !rapidApiHost || rapidApiHost.trim() === "") {
       console.error('[RapidAPI Flow] CRITICAL: RAPIDAPI_KEY or RAPIDAPI_HOST is not configured.');
@@ -78,7 +78,7 @@ const rapidApiImageSearchFlow = ai.defineFlow(
       if (parts.length !== 2) {
         return { success: false, error: 'Invalid image data URI format.', message: 'Invalid image data URI format.' };
       }
-      const meta = parts[0]; // "data:image/jpeg;base64"
+      const meta = parts[0]; 
       const base64Data = parts[1];
       
       const mimeTypeMatch = meta.match(/^data:(image\/[a-zA-Z+]+);base64$/);
@@ -90,25 +90,21 @@ const rapidApiImageSearchFlow = ai.defineFlow(
 
       const imageBuffer = Buffer.from(base64Data, 'base64');
       
-      // --- IMPORTANT: CUSTOMIZE REQUEST PAYLOAD AND METHOD BELOW ---
-      // This is a common way: sending as form-data.
-      // Your chosen API might require something different (e.g., JSON payload with base64 string, different field name).
-      // Consult the API's documentation on RapidAPI.
       const formData = new FormData();
       const imageBlob = new Blob([imageBuffer], { type: mimeType });
-      formData.append('image_file', imageBlob, `upload.${fileExtension}`); // 'image_file' is a common field name. CHANGE IF NEEDED.
+      // Field name depends on the specific API. Common names: 'image_file', 'file', 'source', 'img'.
+      // For face-recognition-api1.p.rapidapi.com/detect, it's often 'source'.
+      formData.append('source', imageBlob, `upload.${fileExtension}`); 
 
       console.log(`[RapidAPI Flow] Sending POST request to ${apiEndpointUrl} with image of type ${mimeType}`);
       
       const response = await fetch(apiEndpointUrl, {
-        method: 'POST', // Or 'GET' if the API uses query params for image URL/data. CHANGE IF NEEDED.
+        method: 'POST', 
         headers: {
           'X-RapidAPI-Key': rapidApiKey,
           'X-RapidAPI-Host': rapidApiHost,
-          // 'Content-Type': 'multipart/form-data' // Usually set automatically by fetch with FormData.
-                                                 // Add if your API specifically requires it, or if sending JSON: 'application/json'
         },
-        body: formData, // Or JSON.stringify({ image: base64Data }) etc. CHANGE IF NEEDED.
+        body: formData, 
       });
 
       const responseText = await response.text();
@@ -119,23 +115,21 @@ const rapidApiImageSearchFlow = ai.defineFlow(
         responseData = JSON.parse(responseText);
       } catch (jsonError) {
         console.error(`[RapidAPI Flow] Could not parse API response as JSON. Status: ${response.status}. Raw response (first 500 chars): ${responseText.substring(0, 500)}`);
-        if (response.ok) { // If status was 2xx but not JSON, it's a problem with the API or our expectation
+        if (response.ok) { 
              return {
-                success: false, // Treat as unsuccessful if we expect JSON but don't get it
+                success: false,
                 message: `API response was not valid JSON, though status was ${response.status}.`,
                 error: `API response was not valid JSON. Raw: ${responseText.substring(0,100)}...`,
                 rawResponse: responseText,
             };
         }
-        // If not OK and not JSON, the original error handling for non-OK responses will catch it.
       }
-
 
       if (!response.ok) {
         console.error(`[RapidAPI Flow] API returned error. Status: ${response.status}. Parsed/Raw response (first 500 chars): ${JSON.stringify(responseData || responseText).substring(0, 500)}`);
         let errorMsg = `RapidAPI Error (${response.status} ${response.statusText})`;
-        if (responseData && (responseData.message || responseData.error)) {
-          errorMsg += ` - ${responseData.message || responseData.error}`;
+        if (responseData && (responseData.message || responseData.error || responseData.detail)) {
+          errorMsg += ` - ${responseData.message || responseData.error || responseData.detail}`;
         } else if (responseText.length > 0 && responseText.length < 300) {
           errorMsg += ` - ${responseText}`;
         }
@@ -147,38 +141,51 @@ const rapidApiImageSearchFlow = ai.defineFlow(
         };
       }
       
-      // --- IMPORTANT: CUSTOMIZE RESPONSE PARSING BELOW ---
-      // Adapt this to the actual structure of your chosen API's success response.
-      // The example below tries to find results in common places like 'results', 'data', or 'matches' arrays.
-      const matches: RapidApiMatch[] = (responseData.results || responseData.data || responseData.matches || []).map((item: any) => ({
-        url: item.url || item.link || item.page_url,
-        score: item.score,
-        thumbnail: item.thumbnail || item.image_url || item.thumb_url,
+      // CUSTOMIZE RESPONSE PARSING FOR REVERSE IMAGE SEARCH
+      // This will be highly dependent on the specific API used.
+      // The face-recognition-api1.p.rapidapi.com/detect endpoint might return an array of detected faces/matches.
+      let potentialMatches: any[] = [];
+      if (Array.isArray(responseData)) { // If the root is an array
+        potentialMatches = responseData;
+      } else if (responseData.results && Array.isArray(responseData.results)) {
+        potentialMatches = responseData.results;
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        potentialMatches = responseData.data;
+      } else if (responseData.matches && Array.isArray(responseData.matches)) {
+        potentialMatches = responseData.matches;
+      } else if (responseData.detections && Array.isArray(responseData.detections)) { // Specific to some face detection APIs
+        potentialMatches = responseData.detections.map((det: any) => ({
+          url: det.profile_url || det.image_url || `detection:${det.face_id || Math.random().toString(36).substring(7)}`, // Placeholder if no direct URL
+          score: det.confidence || det.score,
+          thumbnail: det.thumbnail_url || det.cropped_image_url || det.face_thumbnail, // Attempt multiple fields
+          title: det.name || `Detected Face (ID: ${det.face_id || 'N/A'})`,
+          source: 'face-recognition-api', // Example source
+        }));
+      } else if (typeof responseData === 'object' && responseData !== null) { // If it's a single object, wrap in array
+        potentialMatches = [responseData];
+      }
+
+
+      const matches: RapidApiMatch[] = potentialMatches.map((item: any) => ({
+        url: item.url || item.link || item.page_url || item.image_url || "https://example.com/no-url-found", // Default URL
+        score: item.score || item.similarity || item.confidence, // Add confidence
+        thumbnail: item.thumbnail || item.image_url || item.thumb_url || item.thumbnail_url || item.cropped_image_url || item.face_thumbnail,
         title: item.title || item.description || item.name,
-        // Map other fields from 'item' to 'RapidApiMatchSchema' fields
-      })).filter((match: RapidApiMatch) => match.url); // Ensure basic validity
+        source: item.source || item.domain || rapidApiHost, // Use host as fallback source
+      })).filter((match: RapidApiMatch) => match.url !== "https://example.com/no-url-found");
 
       return {
         success: true,
         matches: matches,
-        message: responseData.message || (matches.length > 0 ? `${matches.length} matches found.` : "No matches found."),
+        message: responseData.message || (matches.length > 0 ? `${matches.length} matches found.` : "No matches found or API response structure not recognized as matches."),
         rawResponse: responseData,
       };
 
     } catch (error) {
       console.error('[RapidAPI Flow] Exception during API call or response processing:', error);
-      let errorMessage = 'An unexpected error occurred during RapidAPI search.';
+      let errorMessage = 'An unexpected error occurred during RapidAPI reverse image search.';
       if (error instanceof Error) {
-        errorMessage = `RapidAPI Search Exception: ${error.message}`;
-        if ((error as any).cause) {
-          const cause = (error as any).cause;
-          console.error('[RapidAPI Flow] Fetch error cause:', cause);
-          try {
-            errorMessage += ` Cause: ${JSON.stringify(cause)}`;
-          } catch (stringifyError) {
-            errorMessage += ` Cause: (Could not stringify - ${cause.toString()})`;
-          }
-        }
+        errorMessage = `RapidAPI Reverse Image Search Exception: ${error.message}`;
       }
       return { success: false, error: errorMessage, message: errorMessage };
     }
