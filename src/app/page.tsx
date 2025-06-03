@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, Search, Camera } from 'lucide-react';
+import { ArrowRight, RadioTower, Binary, Search, Camera, Video } from 'lucide-react'; // Added Video
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function HubPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full max-w-6xl"> {/* Adjusted grid for 4 items */}
         <Link href="/info-sleuth" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-primary/30 hover:border-primary/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-primary/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
@@ -48,12 +48,12 @@ export default function HubPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-2xl sm:text-3xl font-headline text-purple-400 flex items-center">
                   <Camera className="mr-3 h-7 w-7 sm:h-8 sm:w-8" />
-                  Face Recognition
+                  Image Search
                 </CardTitle>
                 <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-purple-400" />
               </div>
               <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
-                Upload an image to find matching faces using FaceCheck.ID reverse image search.
+                Perform reverse image searches using a configured RapidAPI service.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -78,6 +78,26 @@ export default function HubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-primary font-code">Locate Tower &gt;</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/camera-analyzer" passHref>
+          <Card className="bg-card/80 hover:bg-card/100 border-pink-500/30 hover:border-pink-500/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-pink-500/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
+            <CardHeader className="flex-grow">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl sm:text-3xl font-headline text-pink-400 flex items-center">
+                  <Video className="mr-3 h-7 w-7 sm:h-8 sm:w-8" />
+                  Camera Analyzer
+                </CardTitle>
+                <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-pink-400" />
+              </div>
+              <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
+                Analyze live video feed from your camera for objects, scenes, and general details.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-primary font-code">Start Analysis &gt;</p>
             </CardContent>
           </Card>
         </Link>

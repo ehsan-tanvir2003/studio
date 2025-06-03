@@ -3,14 +3,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Search, Camera } from 'lucide-react';
+import { Home, RadioTower, Binary, Search, Camera, Video } from 'lucide-react'; // Added Video icon
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
   { href: '/info-sleuth', label: 'InfoSleuth', icon: Search }, 
-  { href: '/face-search', label: 'Face Search', icon: Camera },
+  { href: '/face-search', label: 'Image Search', icon: Camera }, // Renamed for clarity
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
+  { href: '/camera-analyzer', label: 'Live Analyze', icon: Video }, // New Item
 ];
 
 export default function Navbar() {
@@ -24,7 +25,7 @@ export default function Navbar() {
             <Binary className="h-7 w-7" />
             <span className="font-headline text-2xl font-bold">IntelSuite</span>
           </Link>
-          <div className="flex items-center space-x-1 sm:space-x-2"> {/* Adjusted spacing for more items */}
+          <div className="flex items-center space-x-1"> {/* Adjusted spacing for more items */}
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
@@ -32,7 +33,7 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center px-2 py-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-colors duration-150 ease-in-out", // Adjusted padding
+                    "flex items-center px-2 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-150 ease-in-out", 
                     "font-code",
                     isActive
                       ? "bg-primary/10 text-primary"
@@ -40,7 +41,7 @@ export default function Navbar() {
                   )}
                   title={item.label}
                 >
-                  <item.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", item.href === '/' ? 'sm:mr-0' : 'sm:mr-1.5')} /> {/* Adjusted icon size/margin */}
+                  <item.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", item.href === '/' ? 'sm:mr-0' : 'sm:mr-1')} /> 
                   <span className={cn("hidden sm:inline", item.href === '/' ? 'sm:hidden': '')}>{item.label}</span>
                 </Link>
               );

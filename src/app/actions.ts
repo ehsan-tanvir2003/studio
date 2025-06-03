@@ -4,6 +4,7 @@
 
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow';
+import { analyzeCameraFrame, type AnalyzeCameraFrameInput, type AnalyzeCameraFrameOutput } from '@/ai/flows/analyze-camera-frame-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
 import * as z from 'zod';
 
@@ -48,15 +49,12 @@ export async function searchPdlProfiles(
 }
 
 // --- RapidAPI Reverse Image Search ---
-// Zod schema for the input received by this server action
 const rapidApiActionInputSchema = z.object({
   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
-  // apiEndpointUrl is no longer received from the client
 });
 
 export async function searchWithRapidApi(
   imageDataUri: string
-  // apiEndpointUrl is no longer a parameter here
 ): Promise<RapidApiImageSearchOutput> {
   const validationResult = rapidApiActionInputSchema.safeParse({ imageDataUri });
   if (!validationResult.success) {
@@ -67,8 +65,6 @@ export async function searchWithRapidApi(
   }
 
   const host = process.env.RAPIDAPI_HOST;
-  // IMPORTANT: Replace "YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" with the actual API path from RapidAPI documentation.
-  // For example, it might be "/searchByImage", "/upload", or "/reverse-image-search".
   const path = "/YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE"; 
 
   if (!host || host.trim() === "") {
@@ -82,7 +78,6 @@ export async function searchWithRapidApi(
   
   const constructedApiEndpointUrl = `https://${host}${path}`;
 
-  // This is the input for the Genkit flow, which still expects apiEndpointUrl
   const flowInput: RapidApiImageSearchInput = { 
     imageDataUri: validationResult.data.imageDataUri,
     apiEndpointUrl: constructedApiEndpointUrl
@@ -137,4 +132,34 @@ export async function locateCellTower(
   }
 
   return fetchCellTowerLocationFromUnwiredLabs(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId, 'gsm');
+}
+
+// --- Camera Frame Analysis ---
+const cameraFrameAnalysisSchema = z.object({
+  imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
+});
+
+export async function analyzeImageFrame(
+  imageDataUri: string
+): Promise<AnalyzeCameraFrameOutput | { error: string }> {
+  const validationResult = cameraFrameAnalysisSchema.safeParse({ imageDataUri });
+  if (!validationResult.success) {
+    return { 
+      error: validationResult.error.errors.map(e => e.message).join(', ') 
+    };
+  }
+
+  const input: AnalyzeCameraFrameInput = validationResult.data;
+
+  try {
+    const result = await analyzeCameraFrame(input);
+    return result;
+  } catch (error) {
+    console.error("Error in analyzeCameraFrame flow:", error);
+    let errorMessage = "An unexpected error occurred during image frame analysis.";
+     if (error instanceof Error) {
+        errorMessage = `Frame analysis failed: ${error.message}`;
+    }
+    return { error: errorMessage };
+  }
 }
