@@ -147,6 +147,19 @@ export default function CallerIdResultsDisplay({ results }: CallerIdResultsDispl
                 </div>
               </div>
               
+              {/* Alert if key data fields are missing from the mapped 'data' object */}
+              {!(data.name || data.photo || (data.socialMedia && data.socialMedia.length > 0) || data.email || data.country || data.carrier || data.tags?.length) && (
+                <Alert variant="default" className="my-4 bg-muted/30 border-primary/20">
+                  <Info className="h-5 w-5 text-primary" />
+                  <AlertTitle className="font-headline text-primary">Limited Information Retrieved</AlertTitle>
+                  <AlertDescription className="font-code text-muted-foreground">
+                    The API call was successful and returned a response. However, common details like name, photo, social media, email, or country could not be extracted from the response.
+                    This could mean the information is not available for this number, or the API returned data in an unexpected format.
+                    Please check the raw API response below for any available information.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <Card className="bg-background/50 p-3">
                 <CardContent className="p-0 space-y-1">
                     <DetailItem icon={User} label="Name" value={data.name} />
@@ -198,3 +211,4 @@ export default function CallerIdResultsDisplay({ results }: CallerIdResultsDispl
     </div>
   );
 }
+
