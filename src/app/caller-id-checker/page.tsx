@@ -23,8 +23,8 @@ export default function CallerIdCheckerPage() {
 
     try {
       const response = await searchCallerIdDetails(phoneNumber);
-      if (!response.success && (response.error || response.message)) {
-        const errorMessage = response.error || response.message || "Caller ID API request failed.";
+      if (!response.success) { // This covers API errors or flow internal errors
+        const errorMessage = response.error || response.message || "Caller ID API request failed or an error occurred in the process.";
         setError(errorMessage);
         setResults(null);
         toast({
@@ -32,37 +32,28 @@ export default function CallerIdCheckerPage() {
           title: "Caller ID Error",
           description: errorMessage,
         });
-      } else if (!response.success) {
-        setError("An unknown error occurred with the Caller ID API.");
-        setResults(null);
-         toast({
-          variant: "destructive",
-          title: "Caller ID Error",
-          description: "An unknown error occurred.",
-        });
-      }
-      else {
+      } else { // response.success is true
         setResults(response);
-        if(!response.data) {
+        if(!response.data) { // API call was successful, but no specific caller data found
             toast({
                 title: "No Information Found",
                 description: response.message || `No details found for ${phoneNumber}.`,
             });
-        } else {
+        } else { // Data found and mapped
              toast({
                 title: "Search Complete",
                 description: response.message || `Details retrieved for ${phoneNumber}.`,
             });
         }
       }
-    } catch (e) {
-      const errMessage = e instanceof Error ? e.message : "An unexpected error occurred.";
+    } catch (e) { // Catch exceptions from the action call itself
+      const errMessage = e instanceof Error ? e.message : "An unexpected error occurred during the search operation.";
       setError(errMessage);
-      console.error(e);
+      console.error("Caller ID Page Exception:",e);
       setResults(null);
       toast({
         variant: "destructive",
-        title: "Search Exception",
+        title: "Search Operation Failed",
         description: errMessage,
       });
     } finally {

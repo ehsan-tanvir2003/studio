@@ -101,6 +101,8 @@ const callerIdSearchFlow = ai.defineFlow(
       let responseData: any;
       try {
         responseData = JSON.parse(responseText);
+        // Log the parsed JSON response
+        console.log('[Caller ID Flow] Parsed API JSON response (first 1000 chars):', responseText.substring(0, 1000));
       } catch (jsonError) {
         console.error(`[Caller ID Flow] Could not parse API response as JSON. Status: ${response.status}. Raw response (first 500 chars): ${responseText.substring(0, 500)}`);
         return {
@@ -127,44 +129,39 @@ const callerIdSearchFlow = ai.defineFlow(
         };
       }
       
-      // Assuming Eyecon API returns data directly or within a 'data' field.
-      // This needs to be adjusted based on the actual API response structure.
-      // The provided cURL doesn't show the response body structure.
-      // For now, let's assume the responseData IS the CallerIdData or is under responseData.data
+      // Attempt to extract the main data object from the response
       let callerData = responseData; 
-      if (responseData.data && typeof responseData.data === 'object') {
+      if (responseData && responseData.data && typeof responseData.data === 'object') {
         callerData = responseData.data;
-      } else if (responseData.results && typeof responseData.results === 'object') { // Another common pattern
+      } else if (responseData && responseData.results && typeof responseData.results === 'object') { 
         callerData = responseData.results;
-      } else if (Array.isArray(responseData) && responseData.length > 0 && typeof responseData[0] === 'object'){ // If it's an array of one result
+      } else if (Array.isArray(responseData) && responseData.length > 0 && typeof responseData[0] === 'object'){ 
         callerData = responseData[0];
       }
+      // Log the extracted callerData object before mapping
+      console.log('[Caller ID Flow] Extracted callerData for mapping (first 1000 chars):', JSON.stringify(callerData).substring(0,1000));
 
-      // Basic validation: if no name or key identifier, it might be "not found" or an error
-      if (!callerData || (!callerData.name && !callerData.photo && !callerData.socialMedia && Object.keys(callerData).length < 2) ) {
-        // Check if responseData contains a message indicating "not found"
-        const apiMessage = responseData.message || responseData.reason || "No specific message from API.";
-        if (apiMessage.toLowerCase().includes("not found") || apiMessage.toLowerCase().includes("no user") || response.status === 404) {
-           return {
-            success: true, // API call was successful, but no data found
-            data: null,
-            message: `No caller ID information found for ${phoneNumber}. ${apiMessage}`,
-            rawResponse: responseData,
-          };
-        }
-        // If some data but seems incomplete, treat as partial success or data issue
-        // For now, if main identifiers missing, treat as no data.
-         return {
-            success: true,
-            data: null, // Explicitly null if no meaningful data
-            message: responseData.message || "Caller ID information not found or incomplete.",
-            rawResponse: responseData,
-          };
+
+      // Check if the extracted callerData is minimal or indicates "not found"
+      // This check is important if the API returns 200 OK but with an empty object or a specific "not found" message.
+      const isEffectivelyEmpty = !callerData || Object.keys(callerData).length === 0;
+      const hasNotFoundMessage = responseData.message?.toLowerCase().includes("not found") || 
+                                 responseData.message?.toLowerCase().includes("no user") ||
+                                 responseData.reason?.toLowerCase().includes("not found");
+
+      if (isEffectivelyEmpty || hasNotFoundMessage) {
+        const friendlyMessage = responseData.message || `No caller ID information found for ${phoneNumber}.`;
+        console.log(`[Caller ID Flow] No meaningful data found or "not found" message received. Message: ${friendlyMessage}`);
+        return {
+          success: true, // API call was successful, but no data found
+          data: null,
+          message: friendlyMessage,
+          rawResponse: responseData,
+        };
       }
 
-
       // Map the API response to our CallerIdDataSchema.
-      // This is a best-guess mapping and might need adjustment.
+      // This is a best-guess mapping and might need adjustment based on actual API response.
       const mappedData: CallerIdData = {
         name: callerData.name || (callerData.contact && callerData.contact.name) || null,
         photo: callerData.photo || (callerData.contact && callerData.contact.photo) || (callerData.image_url) || null,
