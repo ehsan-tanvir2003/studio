@@ -1,26 +1,26 @@
 
 "use client";
 
-import type { RapidApiImageSearchOutput, RapidApiMatch } from '@/ai/flows/rapidapi-face-search-flow';
+import type { RapidApiTextImageSearchOutput, RapidApiMatch } from '@/ai/flows/rapidapi-text-image-search-flow'; // Updated import
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, ExternalLink, Info, CameraOff } from 'lucide-react';
+import { CheckCircle, XCircle, ExternalLink, Info, CameraOff, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 interface RapidApiResultsDisplayProps {
-  results: RapidApiImageSearchOutput;
-  searchedImage: string | null; 
+  results: RapidApiTextImageSearchOutput; // Type updated
+  // searchedImage: string | null; // This prop is removed as it's text search now
 }
 
 const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
   const getScoreBadgeVariant = (score?: number | null) => {
     if (score === null || score === undefined) return "secondary";
-    if (score > 75) return "default"; // Will use primary color
-    if (score > 50) return "secondary"; // Consider a yellow-ish or orange for mid scores
+    if (score > 75) return "default"; 
+    if (score > 50) return "secondary";
     return "destructive";
   };
   
@@ -36,22 +36,37 @@ const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
       <CardContent className="p-3">
         <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-3">
           {match.thumbnail ? (
-            <Image
-              src={match.thumbnail}
-              alt={match.title || "Match thumbnail"}
-              width={100}
-              height={100}
-              className="rounded border border-border object-cover aspect-square"
-              data-ai-hint="image match"
-              onError={(e) => (e.currentTarget.style.display = 'none')} // Hide if image fails to load
-            />
+            <a href={match.url} target="_blank" rel="noopener noreferrer" className="block w-full sm:w-[100px] aspect-square flex-shrink-0">
+              <Image
+                src={match.thumbnail}
+                alt={match.title || "Match thumbnail"}
+                width={100}
+                height={100}
+                className="rounded border border-border object-cover aspect-square w-full h-full"
+                data-ai-hint="image match result"
+                onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if(parent?.getElementsByClassName('placeholder-icon').length === 0){
+                        const placeholder = document.createElement('div');
+                        placeholder.className = "placeholder-icon w-[100px] h-[100px] bg-muted rounded border border-border flex items-center justify-center";
+                        placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-camera-off text-muted-foreground"><line x1="2" x2="22" y1="2" y2="22"></line><path d="M7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16"></path><path d="M9.5 4h5L17 7H7Z"></path><path d="M14.121 15.121A3 3 0 1 1 9.88 10.88"></path></svg>`;
+                        parent?.appendChild(placeholder);
+                    }
+                }}
+              />
+            </a>
           ) : (
-            <div className="w-[100px] h-[100px] bg-muted rounded border border-border flex items-center justify-center">
-              <CameraOff className="h-8 w-8 text-muted-foreground" />
+            <div className="w-[100px] h-[100px] bg-muted rounded border border-border flex items-center justify-center flex-shrink-0">
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
             </div>
           )}
           <div className="flex-1 min-w-0">
             {match.title && <p className="text-sm font-semibold text-foreground truncate" title={match.title}>{match.title}</p>}
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
+              Source: <span className="text-primary">{match.source || 'N/A'}</span>
+            </p>
             <p className="text-xs text-muted-foreground truncate mt-0.5">
               <a 
                 href={match.url} 
@@ -60,7 +75,7 @@ const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
                 className="text-primary hover:underline break-all"
                 title={match.url}
               >
-                {match.url} <ExternalLink className="inline h-3 w-3 ml-0.5" />
+                View Image/Page <ExternalLink className="inline h-3 w-3 ml-0.5" />
               </a>
             </p>
             {match.score !== undefined && match.score !== null && (
@@ -75,7 +90,8 @@ const MatchCard: React.FC<{ match: RapidApiMatch }> = ({ match }) => {
   );
 };
 
-export default function RapidApiResultsDisplay({ results, searchedImage }: RapidApiResultsDisplayProps) {
+// Removed searchedImage from props
+export default function RapidApiResultsDisplay({ results }: RapidApiResultsDisplayProps) { 
   if (!results) return null;
 
   return (
@@ -86,7 +102,7 @@ export default function RapidApiResultsDisplay({ results, searchedImage }: Rapid
             <div className="flex items-center">
               {results.success ? <CheckCircle className="mr-3 h-7 w-7 text-green-500" /> : <XCircle className="mr-3 h-7 w-7 text-destructive" />}
               <CardTitle className="text-xl sm:text-2xl font-headline text-primary">
-                RapidAPI Image Search Results
+                Image Search Results
               </CardTitle>
             </div>
             {results.success && results.matches && results.matches.length > 0 && (
@@ -95,12 +111,7 @@ export default function RapidApiResultsDisplay({ results, searchedImage }: Rapid
               </Badge>
             )}
           </div>
-          {searchedImage && (
-            <div className="mt-3 pt-3 border-t border-border/20 flex flex-col sm:flex-row items-center gap-3">
-              <Image src={searchedImage} alt="Searched image" width={60} height={60} className="rounded-md border border-border object-cover" data-ai-hint="searched image rapidapi"/>
-              <p className="text-xs font-code text-muted-foreground text-center sm:text-left">Results for the uploaded image.</p>
-            </div>
-          )}
+          {/* Removed searchedImage preview section */}
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6">
@@ -116,7 +127,8 @@ export default function RapidApiResultsDisplay({ results, searchedImage }: Rapid
             <ScrollArea className="h-[400px] sm:h-[500px] pr-3">
               <div className="space-y-3">
                 {results.matches.map((match, index) => (
-                  <MatchCard key={`${match.url}-${index}`} match={match} />
+                  // Ensure a unique key, using URL and index if needed
+                  <MatchCard key={`${match.url}-${index}-${match.thumbnail || ''}`} match={match} />
                 ))}
               </div>
             </ScrollArea>
@@ -125,7 +137,7 @@ export default function RapidApiResultsDisplay({ results, searchedImage }: Rapid
           {results.success && (!results.matches || results.matches.length === 0) && (
              <div className="text-center py-8 text-muted-foreground font-code">
               <Info className="mx-auto h-10 w-10 mb-3 text-primary/50"/>
-              {results.message || "No matching images found by the RapidAPI service."}
+              {results.message || "No matching images found for your query."}
             </div>
           )}
         </CardContent>

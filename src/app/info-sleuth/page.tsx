@@ -2,29 +2,30 @@
 "use client";
 
 import { useState } from 'react';
-import RapidApiImageUploadForm from '@/components/app/rapidapi-image-upload-form';
+import RapidApiTextQueryForm from '@/components/app/RapidApiTextQueryForm'; // Updated import
 import RapidApiResultsDisplay from '@/components/app/rapidapi-results-display';
-import type { RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow';
+import type { RapidApiTextImageSearchOutput } from '@/ai/flows/rapidapi-text-image-search-flow'; // Updated import
 import { searchWithRapidApiAction } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Search, Terminal, Loader2 } from "lucide-react"; // Changed ImageSearch to Search
+import { FileSearch, Terminal, Loader2 } from "lucide-react"; // Changed Icon
 import { useToast } from "@/hooks/use-toast";
 
-export default function ReverseImageSearchPage() {
-  const [results, setResults] = useState<RapidApiImageSearchOutput | null>(null);
+export default function TextImageSearchPage() { // Renamed component slightly for clarity
+  const [results, setResults] = useState<RapidApiTextImageSearchOutput | null>(null); // Updated type
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchedImage, setSearchedImage] = useState<string | null>(null);
+  // const [searchedImage, setSearchedImage] = useState<string | null>(null); // No longer needed for text search
   const { toast } = useToast();
 
-  const handleSearch = async (imageDataUri: string) => {
+  const handleSearch = async (query: string, limit?: number) => { // Accepts query and optional limit
     setIsLoading(true);
     setResults(null);
     setError(null);
-    setSearchedImage(imageDataUri);
+    // setSearchedImage(null); // No longer applicable
 
     try {
-      const response = await searchWithRapidApiAction(imageDataUri);
+      // Pass query and limit to the action
+      const response = await searchWithRapidApiAction(query, limit); 
       if (!response.success && (response.error || response.message)) {
         const errorMessage = response.error || response.message || "RapidAPI request failed.";
         setError(errorMessage);
@@ -48,7 +49,7 @@ export default function ReverseImageSearchPage() {
         if(!response.matches || response.matches.length === 0) {
             toast({
                 title: "No Matches Found",
-                description: response.message || "RapidAPI did not find any matches for the uploaded image.",
+                description: response.message || "RapidAPI did not find any matches for your query.",
             });
         } else {
              toast({
@@ -75,19 +76,19 @@ export default function ReverseImageSearchPage() {
   return (
     <div className="min-h-full flex flex-col items-center py-8 px-4">
       <header className="mb-10 sm:mb-12 text-center">
-        <Search className="mx-auto h-16 w-16 text-primary mb-4" /> {/* Changed ImageSearch to Search */}
-        <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Reverse Image Search</h1>
+        <FileSearch className="mx-auto h-16 w-16 text-primary mb-4" /> {/* Changed Icon */}
+        <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Image Search Engine</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          Upload an image to find similar images via a configured RapidAPI service.
+          Enter a query to find relevant images using the Real Time Image Search API.
         </p>
          <p className="text-xs text-muted-foreground/70 mt-2 font-code">
-          Ensure RAPIDAPI_KEY, RAPIDAPI_HOST, and the API path in `src/app/actions.ts` are correctly configured.
+          Ensure RAPIDAPI_KEY and RAPIDAPI_HOST (real-time-image-search.p.rapidapi.com) are correctly configured.
         </p>
       </header>
 
       <main className="w-full max-w-2xl space-y-12">
         <div>
-          <RapidApiImageUploadForm
+          <RapidApiTextQueryForm // Using the new form component
             onSubmit={handleSearch} 
             isLoading={isLoading}
           />
@@ -99,7 +100,7 @@ export default function ReverseImageSearchPage() {
                 <p className="text-lg text-primary font-code font-medium">
                   [QUERYING_RAPIDAPI_SERVICE...]
                 </p>
-                <p className="text-sm text-muted-foreground font-code">Please wait while the image is processed.</p>
+                <p className="text-sm text-muted-foreground font-code">Please wait while images are fetched.</p>
               </div>
             </div>
           )}
@@ -114,7 +115,8 @@ export default function ReverseImageSearchPage() {
             </Alert>
           )}
           
-          {results && !isLoading && <RapidApiResultsDisplay results={results} searchedImage={searchedImage} />}
+          {/* RapidApiResultsDisplay no longer needs searchedImage */}
+          {results && !isLoading && <RapidApiResultsDisplay results={results} />} 
         </div>
       </main>
     </div>
