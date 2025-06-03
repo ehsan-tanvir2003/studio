@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, ScanFace, Video } from 'lucide-react'; // Used ScanFace
+import { ArrowRight, RadioTower, Binary, Search, Video } from 'lucide-react'; // Changed ImageSearch to Search
 import * as React from 'react'; 
 
 export default function HubPage() {
@@ -24,19 +24,19 @@ export default function HubPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full max-w-4xl"> {/* Adjusted grid for 4 items */}
         <Link href="/info-sleuth" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-primary/30 hover:border-primary/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-primary/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-2xl sm:text-3xl font-headline text-primary flex items-center">
-                  <ScanFace className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> 
-                  Face Search
+                  <Search className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> {/* Updated Icon */}
+                  Image Search
                 </CardTitle>
                 <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
               </div>
               <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
-                Upload an image to search for matching faces using FaceCheck.ID.
+                Upload an image to find similar images using a configured RapidAPI service.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -84,6 +84,16 @@ export default function HubPage() {
             </CardContent>
           </Card>
         </Link>
+        
+        {/* Placeholder for a potential fourth tool or can be removed */}
+        <Card className="bg-card/60 border-dashed border-border/50 flex flex-col h-full items-center justify-center opacity-70">
+            <CardHeader className="text-center">
+                <CardTitle className="text-xl font-headline text-muted-foreground">Future Tool Slot</CardTitle>
+                <CardDescription className="font-code text-xs text-muted-foreground/80">
+                    Another OSINT capability coming soon...
+                </CardDescription>
+            </CardHeader>
+        </Card>
       </div>
 
       <div className="mt-12 p-6 border border-dashed border-muted-foreground/30 rounded-lg bg-card/50 max-w-2xl w-full">

@@ -2,16 +2,16 @@
 "use client";
 
 import { useState } from 'react';
-import FaceUploadForm from '@/components/app/face-upload-form';
-import FaceCheckResultsDisplay from '@/components/app/face-check-results-display';
-import type { FaceCheckOutput } from '@/ai/flows/face-check-flow';
-import { searchFaceWithFaceCheckAction } from '@/app/actions';
+import RapidApiImageUploadForm from '@/components/app/rapidapi-image-upload-form';
+import RapidApiResultsDisplay from '@/components/app/rapidapi-results-display';
+import type { RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow';
+import { searchWithRapidApiAction } from '@/app/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ScanFace, Terminal, Loader2 } from "lucide-react";
+import { Search, Terminal, Loader2 } from "lucide-react"; // Changed ImageSearch to Search
 import { useToast } from "@/hooks/use-toast";
 
-export default function FaceRecognitionPage() {
-  const [results, setResults] = useState<FaceCheckOutput | null>(null);
+export default function ReverseImageSearchPage() {
+  const [results, setResults] = useState<RapidApiImageSearchOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchedImage, setSearchedImage] = useState<string | null>(null);
@@ -24,36 +24,36 @@ export default function FaceRecognitionPage() {
     setSearchedImage(imageDataUri);
 
     try {
-      const response = await searchFaceWithFaceCheckAction(imageDataUri);
+      const response = await searchWithRapidApiAction(imageDataUri);
       if (!response.success && (response.error || response.message)) {
-        const errorMessage = response.error || response.message || "FaceCheck.ID API request failed.";
+        const errorMessage = response.error || response.message || "RapidAPI request failed.";
         setError(errorMessage);
         setResults(null);
         toast({
           variant: "destructive",
-          title: "FaceCheck.ID Error",
+          title: "RapidAPI Error",
           description: errorMessage,
         });
       } else if (!response.success) {
-        setError("An unknown error occurred with FaceCheck.ID.");
+        setError("An unknown error occurred with RapidAPI.");
         setResults(null);
          toast({
           variant: "destructive",
-          title: "FaceCheck.ID Error",
+          title: "RapidAPI Error",
           description: "An unknown error occurred.",
         });
       }
       else {
         setResults(response);
-        if(response.items_count === 0) {
+        if(!response.matches || response.matches.length === 0) {
             toast({
                 title: "No Matches Found",
-                description: "FaceCheck.ID did not find any matches for the uploaded image.",
+                description: response.message || "RapidAPI did not find any matches for the uploaded image.",
             });
         } else {
              toast({
                 title: "Search Complete",
-                description: `FaceCheck.ID found ${response.items_count} potential match(es).`,
+                description: response.message || `RapidAPI found ${response.matches.length} potential match(es).`,
             });
         }
       }
@@ -75,16 +75,19 @@ export default function FaceRecognitionPage() {
   return (
     <div className="min-h-full flex flex-col items-center py-8 px-4">
       <header className="mb-10 sm:mb-12 text-center">
-        <ScanFace className="mx-auto h-16 w-16 text-primary mb-4" />
-        <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Face Recognition Search</h1>
+        <Search className="mx-auto h-16 w-16 text-primary mb-4" /> {/* Changed ImageSearch to Search */}
+        <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Reverse Image Search</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          Upload an image to find matching faces via FaceCheck.ID
+          Upload an image to find similar images via a configured RapidAPI service.
+        </p>
+         <p className="text-xs text-muted-foreground/70 mt-2 font-code">
+          Ensure RAPIDAPI_KEY, RAPIDAPI_HOST, and the API path in `src/app/actions.ts` are correctly configured.
         </p>
       </header>
 
       <main className="w-full max-w-2xl space-y-12">
         <div>
-          <FaceUploadForm 
+          <RapidApiImageUploadForm
             onSubmit={handleSearch} 
             isLoading={isLoading}
           />
@@ -94,7 +97,7 @@ export default function FaceRecognitionPage() {
               <div role="status" className="flex flex-col items-center space-y-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin"/>
                 <p className="text-lg text-primary font-code font-medium">
-                  [QUERYING_FACECHECK.ID_DATABASE...]
+                  [QUERYING_RAPIDAPI_SERVICE...]
                 </p>
                 <p className="text-sm text-muted-foreground font-code">Please wait while the image is processed.</p>
               </div>
@@ -111,7 +114,7 @@ export default function FaceRecognitionPage() {
             </Alert>
           )}
           
-          {results && !isLoading && <FaceCheckResultsDisplay results={results} searchedImage={searchedImage} />}
+          {results && !isLoading && <RapidApiResultsDisplay results={results} searchedImage={searchedImage} />}
         </div>
       </main>
     </div>

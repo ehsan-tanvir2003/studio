@@ -5,10 +5,10 @@
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { analyzeCameraFrame, type AnalyzeCameraFrameInput, type AnalyzeCameraFrameOutput } from '@/ai/flows/analyze-camera-frame-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
-import { searchFaceWithFaceCheck, type FaceCheckInput, type FaceCheckOutput } from '@/ai/flows/face-check-flow';
+import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow';
 import * as z from 'zod';
 
-// --- PeopleDataLabs Person Search (Retained for potential future use, not primary for InfoSleuth page anymore) ---
+// --- PeopleDataLabs Person Search ---
 const pdlPersonSearchSchema = z.object({
   fullName: z.string().min(3, "Full name must be at least 3 characters long.").max(100, "Full name is too long."),
   location: z.string().max(100, "Location hint is too long.").optional().default(""),
@@ -48,36 +48,62 @@ export async function searchPdlProfiles(
   }
 }
 
-// --- FaceCheck.ID Reverse Image Search ---
-const faceCheckActionInputSchema = z.object({
+// --- RapidAPI Reverse Image Search ---
+const rapidApiSearchActionInputSchema = z.object({
   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
 });
 
-export async function searchFaceWithFaceCheckAction(
+export async function searchWithRapidApiAction(
   imageDataUri: string
-): Promise<FaceCheckOutput> {
-  const validationResult = faceCheckActionInputSchema.safeParse({ imageDataUri });
+): Promise<RapidApiImageSearchOutput> {
+  const validationResult = rapidApiSearchActionInputSchema.safeParse({ imageDataUri });
   if (!validationResult.success) {
     return {
       success: false,
       error: validationResult.error.errors.map(e => e.message).join(', '),
+      message: validationResult.error.errors.map(e => e.message).join(', '),
     };
   }
+
+  const rapidApiHost = process.env.RAPIDAPI_HOST;
+  if (!rapidApiHost) {
+    return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
+  }
+
+  // !!! IMPORTANT: CONFIGURE THE API PATH BELOW !!!
+  // Replace "YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" with the actual path for your chosen RapidAPI endpoint.
+  // For example, if the host is "real-time-image-search.p.rapidapi.com" and the path is "/searchByImage",
+  // then set apiPath = "/searchByImage". Include any default query parameters if the API needs them and they
+  // are not part of the user input (e.g., "/searchByImage?mode=fast").
+  const apiPath = "/search"; // Example: "/searchByImage" or "/reverse-search" - CHECK YOUR API DOCS!
+  // Some APIs might include query parameters in the base path.
+  // The current `real-time-image-search.p.rapidapi.com` uses `/search`
+  // and expects image data as form-data, not in query.
+  // Parameters like `limit`, `size` etc. from the user's example URL (`https://real-time-image-search.p.rapidapi.com/search?query=beach&limit=10...`)
+  // are for TEXT based search. For reverse image search, they usually don't apply or are handled differently.
+
+  if (apiPath === "YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" || apiPath.trim() === "" || !apiPath.startsWith("/")) {
+     console.error("CRITICAL: RapidAPI path is not configured correctly in src/app/actions.ts. Please set 'apiPath'.");
+     return { success: false, error: "RapidAPI endpoint path is not configured on the server.", message: "Server configuration error: API path missing."};
+  }
   
-  const flowInput: FaceCheckInput = { 
+  const fullApiEndpointUrl = `https://${rapidApiHost}${apiPath}`;
+  
+  const flowInput: RapidApiImageSearchInput = { 
     imageDataUri: validationResult.data.imageDataUri,
+    apiEndpointUrl: fullApiEndpointUrl,
   };
 
   try {
-    const result = await searchFaceWithFaceCheck(flowInput);
+    const result = await searchImageWithRapidApi(flowInput);
     return result;
   } catch (error) {
-    console.error("Error in searchFaceWithFaceCheck flow:", error);
-    let errorMessage = "An unexpected error occurred during FaceCheck.ID search.";
+    console.error("Error in searchImageWithRapidApi flow:", error);
+    let errorMessage = "An unexpected error occurred during RapidAPI image search.";
     if (error instanceof Error) {
-      errorMessage = `FaceCheck.ID search failed: ${error.message}`;
+      errorMessage = `RapidAPI image search failed: ${error.message}`;
     }
-    return { success: false, error: errorMessage };
+    return { success: false, error: errorMessage, message: errorMessage };
   }
 }
 
