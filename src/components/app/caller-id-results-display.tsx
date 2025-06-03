@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { 
-    CheckCircle, XCircle, Info, User, Phone, MapPin, Briefcase, Globe, Image as ImageIcon, Sparkles, Mail, Users, Tag, CalendarDays, ExternalLink
+    CheckCircle, XCircle, Info, User, Phone, MapPin, Briefcase, Globe, Image as ImageIcon, Sparkles, Mail, Users, Tag, CalendarDays, ExternalLink, FileText
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ interface CallerIdResultsDisplayProps {
   results: CallerIdSearchOutput;
 }
 
-const DetailItem: React.FC<{ icon: React.ElementType, label: string, value?: string | null | boolean | string[] }> = ({ icon: Icon, label, value }) => {
+const DetailItem: React.FC<{ icon: React.ElementType, label: string, value?: string | null | boolean | string[] | number | Record<string, any> }> = ({ icon: Icon, label, value }) => {
   if (value === null || value === undefined || (typeof value === 'string' && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
     return null;
   }
@@ -27,13 +27,22 @@ const DetailItem: React.FC<{ icon: React.ElementType, label: string, value?: str
   if (typeof value === 'boolean') {
     displayValue = value ? <CheckCircle className="inline h-4 w-4 text-green-500" /> : <XCircle className="inline h-4 w-4 text-red-500" />;
   } else if (Array.isArray(value)) {
-    displayValue = (
-      <div className="flex flex-wrap gap-1 mt-1">
-        {value.map((item, index) => <Badge key={index} variant="secondary" className="font-normal bg-muted/60">{item}</Badge>)}
-      </div>
-    );
-  } else {
-    displayValue = <span className="text-foreground/90">{value}</span>;
+    if (value.every(item => typeof item === 'string')) {
+      displayValue = (
+        <div className="flex flex-wrap gap-1 mt-1">
+          {(value as string[]).map((item, index) => <Badge key={index} variant="secondary" className="font-normal bg-muted/60">{item}</Badge>)}
+        </div>
+      );
+    } else {
+      // For arrays of non-strings, or mixed arrays, display as string for now
+      displayValue = <span className="text-foreground/90">{value.join(', ')}</span>;
+    }
+  } else if (typeof value === 'object' && value !== null) {
+    // Display [object Object] for complex objects, user can see details in raw JSON
+    displayValue = <span className="text-foreground/90 italic">[Complex Data - See Raw JSON]</span>;
+  }
+   else {
+    displayValue = <span className="text-foreground/90">{String(value)}</span>;
   }
 
   return (
@@ -51,7 +60,7 @@ const SocialMediaLink: React.FC<{ social: SocialMediaInfo }> = ({ social }) => {
   if (!social || (!social.id && !social.name)) return null;
 
   let icon = <Globe className="h-5 w-5 text-muted-foreground" />;
-  if (social.type?.toLowerCase().includes('facebook')) icon = <User className="h-5 w-5 text-blue-600" />; // Placeholder, ideally use specific icons
+  if (social.type?.toLowerCase().includes('facebook')) icon = <User className="h-5 w-5 text-blue-600" />;
   if (social.type?.toLowerCase().includes('whatsapp')) icon = <Phone className="h-5 w-5 text-green-500" />;
   if (social.type?.toLowerCase().includes('instagram')) icon = <ImageIcon className="h-5 w-5 text-pink-500" />;
   
@@ -59,13 +68,11 @@ const SocialMediaLink: React.FC<{ social: SocialMediaInfo }> = ({ social }) => {
   if (linkUrl && !linkUrl.startsWith('http') && social.type) {
       if (social.type.toLowerCase() === 'facebook' && /^\d+$/.test(linkUrl)) linkUrl = `https://www.facebook.com/profile.php?id=${linkUrl}`;
       else if (social.type.toLowerCase() === 'instagram' && !linkUrl.includes('/')) linkUrl = `https://www.instagram.com/${linkUrl}`;
-      // Add more specific URL constructions if needed
   }
-
 
   return (
     <a 
-        href={linkUrl && (linkUrl.startsWith('http') || social.type === 'whatsapp') ? linkUrl : undefined} 
+        href={linkUrl && (linkUrl.startsWith('http') || social.type?.toLowerCase() === 'whatsapp') ? linkUrl : undefined} 
         target="_blank" 
         rel="noopener noreferrer" 
         className={cn(
@@ -84,7 +91,7 @@ const SocialMediaLink: React.FC<{ social: SocialMediaInfo }> = ({ social }) => {
         <p className="font-semibold text-foreground truncate">{social.name || social.type || 'Social Profile'}</p>
         {social.id && <p className="text-muted-foreground truncate">{social.id.startsWith('http') ? 'View Profile' : social.id}</p>}
       </div>
-      {linkUrl && (linkUrl.startsWith('http') || social.type === 'whatsapp') && <ExternalLink className="h-3 w-3 text-primary ml-auto flex-shrink-0"/>}
+      {linkUrl && (linkUrl.startsWith('http') || social.type?.toLowerCase() === 'whatsapp') && <ExternalLink className="h-3 w-3 text-primary ml-auto flex-shrink-0"/>}
     </a>
   );
 }
@@ -94,6 +101,9 @@ export default function CallerIdResultsDisplay({ results }: CallerIdResultsDispl
   if (!results) return null;
 
   const { success, data, message, error, rawResponse } = results;
+
+  // Keys handled by dedicated UI elements (Avatar, main name, social links, spam badge)
+  const explicitlyHandledKeys = ['photo', 'name', 'type', 'isSpam', 'socialMedia'];
 
   return (
     <div className="mt-8 space-y-6">
@@ -147,31 +157,42 @@ export default function CallerIdResultsDisplay({ results }: CallerIdResultsDispl
                 </div>
               </div>
               
-              {/* Alert if key data fields are missing from the mapped 'data' object */}
-              {!(data.name || data.photo || (data.socialMedia && data.socialMedia.length > 0) || data.email || data.country || data.carrier || data.tags?.length) && (
-                <Alert variant="default" className="my-4 bg-muted/30 border-primary/20">
-                  <Info className="h-5 w-5 text-primary" />
-                  <AlertTitle className="font-headline text-primary">Limited Information Retrieved</AlertTitle>
-                  <AlertDescription className="font-code text-muted-foreground">
-                    The API call was successful and returned a response. However, common details like name, photo, social media, email, or country could not be extracted from the response.
-                    This could mean the information is not available for this number, or the API returned data in an unexpected format.
-                    Please check the raw API response below for any available information.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
               <Card className="bg-background/50 p-3">
                 <CardContent className="p-0 space-y-1">
-                    <DetailItem icon={User} label="Name" value={data.name} />
-                    <DetailItem icon={MapPin} label="Country" value={data.country} />
-                    <DetailItem icon={Briefcase} label="Carrier" value={data.carrier} />
-                    <DetailItem icon={Mail} label="Email" value={data.email} />
-                    <DetailItem icon={CalendarDays} label="Last Seen" value={data.lastSeen} />
-                    <DetailItem icon={Phone} label="Other Phones" value={data.otherPhones} />
-                    <DetailItem icon={Tag} label="Tags" value={data.tags} />
+                    {Object.entries(data)
+                      .filter(([key, value]) => 
+                        !explicitlyHandledKeys.includes(key) && 
+                        value !== null && 
+                        value !== undefined &&
+                        !(Array.isArray(value) && value.length === 0) &&
+                        !(typeof value === 'string' && value.trim() === '')
+                      )
+                      .map(([key, value]) => {
+                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+                        let IconComponent = FileText; // Default icon for generic data
+                        if (key.toLowerCase().includes('email')) IconComponent = Mail;
+                        else if (key.toLowerCase().includes('phone') || key.toLowerCase().includes('number')) IconComponent = Phone;
+                        else if (key.toLowerCase().includes('location') || key.toLowerCase().includes('address') || key.toLowerCase().includes('country') || key.toLowerCase().includes('city') || key.toLowerCase().includes('region')) IconComponent = MapPin;
+                        else if (key.toLowerCase().includes('company') || key.toLowerCase().includes('carrier') || key.toLowerCase().includes('work') || key.toLowerCase().includes('organization') || key.toLowerCase().includes('business')) IconComponent = Briefcase;
+                        else if (key.toLowerCase().includes('url') || key.toLowerCase().includes('website') || key.toLowerCase().includes('link')) IconComponent = Globe;
+                        else if (key.toLowerCase().includes('tag')) IconComponent = Tag;
+                        else if (key.toLowerCase().includes('date') || key.toLowerCase().includes('seen') || key.toLowerCase().includes('time') || key.toLowerCase().includes('timestamp')) IconComponent = CalendarDays;
+                        else if (key.toLowerCase().includes('id') && !key.toLowerCase().includes('social')) IconComponent = User; // Generic ID, but not social media ID
+
+                        return <DetailItem key={key} icon={IconComponent} label={label} value={value as any} />;
+                    })}
+                    {Object.entries(data).filter(([key, value]) => !explicitlyHandledKeys.includes(key) && (value === null || value === undefined || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === ''))).length === Object.keys(data).filter(k => !explicitlyHandledKeys.includes(k)).length && (
+                         <Alert variant="default" className="my-4 bg-muted/30 border-primary/20">
+                            <Info className="h-5 w-5 text-primary" />
+                            <AlertTitle className="font-headline text-primary">Limited Information</AlertTitle>
+                            <AlertDescription className="font-code text-muted-foreground">
+                                The API call was successful, but most common details (other than name/photo/social) could not be extracted or were not provided.
+                                Check the raw API response for any other available data.
+                            </AlertDescription>
+                         </Alert>
+                    )}
                 </CardContent>
               </Card>
-
 
               {data.socialMedia && data.socialMedia.length > 0 && (
                 <Card className="bg-background/50">
@@ -185,6 +206,18 @@ export default function CallerIdResultsDisplay({ results }: CallerIdResultsDispl
                     </CardContent>
                 </Card>
               )}
+
+              {Object.keys(data).length === 0 && !Object.values(data).some(v => v !== null && v !== undefined) && (
+                 <Alert variant="default" className="my-4 bg-muted/30 border-primary/20">
+                  <Info className="h-5 w-5 text-primary" />
+                  <AlertTitle className="font-headline text-primary">No Details Found</AlertTitle>
+                  <AlertDescription className="font-code text-muted-foreground">
+                    The API responded successfully but returned no specific details for this phone number.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+
             </div>
           )}
         </CardContent>
