@@ -6,8 +6,8 @@ import Navbar from '@/components/app/navbar'; // New import
 import { Separator } from '@/components/ui/separator';
 
 export const metadata: Metadata = {
-  title: 'Intel Tools Suite - OSINT Toolkit',
-  description: 'A suite of tools for public information gathering and analysis.',
+  title: 'Intel Tools Hub | OSINT Toolkit', // Moved title from page.tsx to here as it's a client component now
+  description: 'Central hub for accessing various OSINT tools like PDL People Search and Cell Locator.', // Moved description
 };
 
 export default function RootLayout({

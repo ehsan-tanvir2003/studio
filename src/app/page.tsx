@@ -1,16 +1,24 @@
+"use client";
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, Search, Camera, Video } from 'lucide-react'; // Added Video
+import { ArrowRight, RadioTower, Binary, Search, Video } from 'lucide-react'; // Removed Camera
 import type { Metadata } from 'next';
+import * as React from 'react'; // Import React
 
-export const metadata: Metadata = {
-  title: 'Intel Tools Hub | OSINT Toolkit',
-  description: 'Central hub for accessing various OSINT tools like PDL People Search, Face Recognition and Cell Locator.',
-};
+// export const metadata: Metadata = { // Metadata should be defined in layout.tsx or at a higher level for client components
+//   title: 'Intel Tools Hub | OSINT Toolkit',
+//   description: 'Central hub for accessing various OSINT tools like PDL People Search and Cell Locator.',
+// };
 
 export default function HubPage() {
-  const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+  const [currentTime, setCurrentTime] = React.useState('');
+
+  React.useEffect(() => {
+    setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }));
+  }, []);
+
+
   return (
     <div className="flex flex-col items-center justify-center space-y-12">
       <header className="text-center space-y-4">
@@ -21,7 +29,7 @@ export default function HubPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full max-w-6xl"> {/* Adjusted grid for 4 items */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl"> {/* Adjusted grid for 3 items */}
         <Link href="/info-sleuth" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-primary/30 hover:border-primary/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-primary/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
@@ -38,26 +46,6 @@ export default function HubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-accent font-code">Initiate Search &gt;</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/face-search" passHref>
-          <Card className="bg-card/80 hover:bg-card/100 border-purple-500/30 hover:border-purple-500/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-purple-500/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
-            <CardHeader className="flex-grow">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl sm:text-3xl font-headline text-purple-400 flex items-center">
-                  <Camera className="mr-3 h-7 w-7 sm:h-8 sm:w-8" />
-                  Image Search
-                </CardTitle>
-                <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-purple-400" />
-              </div>
-              <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
-                Perform reverse image searches using a configured RapidAPI service.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-primary font-code">Upload Image &gt;</p>
             </CardContent>
           </Card>
         </Link>
@@ -105,9 +93,11 @@ export default function HubPage() {
 
       <div className="mt-12 p-6 border border-dashed border-muted-foreground/30 rounded-lg bg-card/50 max-w-2xl w-full">
         <h3 className="text-xl font-headline text-center text-muted-foreground mb-3">System Status: <span className="text-green-400">All Systems Operational</span></h3>
-        <p className="text-xs text-center font-code text-muted-foreground/70">
-          [Last Check: {currentTime}] - Tools are online and ready for deployment.
-        </p>
+        {currentTime && (
+          <p className="text-xs text-center font-code text-muted-foreground/70">
+            [Last Check: {currentTime}] - Tools are online and ready for deployment.
+          </p>
+        )}
         <p className="text-xs text-center font-code text-muted-foreground/70 mt-1">
           Ensure API keys are correctly set in the .env file for full functionality.
         </p>

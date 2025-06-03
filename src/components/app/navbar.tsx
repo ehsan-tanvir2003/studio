@@ -1,17 +1,16 @@
-
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Search, Camera, Video } from 'lucide-react'; // Added Video icon
+import { Home, RadioTower, Binary, Search, Video } from 'lucide-react'; // Removed Camera icon
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
   { href: '/info-sleuth', label: 'InfoSleuth', icon: Search }, 
-  { href: '/face-search', label: 'Image Search', icon: Camera }, // Renamed for clarity
+  // { href: '/face-search', label: 'Image Search', icon: Camera }, // Removed
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
-  { href: '/camera-analyzer', label: 'Live Analyze', icon: Video }, // New Item
+  { href: '/camera-analyzer', label: 'Live Analyze', icon: Video },
 ];
 
 export default function Navbar() {
@@ -25,7 +24,7 @@ export default function Navbar() {
             <Binary className="h-7 w-7" />
             <span className="font-headline text-2xl font-bold">IntelSuite</span>
           </Link>
-          <div className="flex items-center space-x-1"> {/* Adjusted spacing for more items */}
+          <div className="flex items-center space-x-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
