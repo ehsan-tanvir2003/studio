@@ -59,42 +59,42 @@ const faceCheckFlow = ai.defineFlow(
       return {
         success: false,
         error: 'FaceCheck.ID API Key is not configured. Please check server configuration.',
+        message: 'FaceCheck.ID API Key is not configured. Please check server configuration.',
       };
     }
-    console.log(`[FaceCheck Flow] FACECHECK_API_KEY found.`);
+    console.log(`[FaceCheck Flow] FACECHECK_API_KEY found (starts with: ${apiKey.substring(0, Math.min(5, apiKey.length))}).`);
 
     try {
       const { imageDataUri } = input;
       const parts = imageDataUri.split(',');
       if (parts.length !== 2) {
-        return { success: false, error: 'Invalid image data URI format.' };
+        return { success: false, error: 'Invalid image data URI format.', message: 'Invalid image data URI format.' };
       }
       const meta = parts[0]; // "data:image/jpeg;base64"
       const base64Data = parts[1];
       
-      const mimeType = meta.split(';')[0].split(':')[1];
-      if (!mimeType || !mimeType.startsWith('image/')) {
-         return { success: false, error: 'Invalid image MIME type in data URI.' };
+      const mimeTypeMatch = meta.match(/^data:(image\/[a-zA-Z+]+);base64$/);
+      if (!mimeTypeMatch || !mimeTypeMatch[1]) {
+         return { success: false, error: 'Invalid image MIME type in data URI.', message: 'Invalid image MIME type in data URI.' };
       }
+      const mimeType = mimeTypeMatch[1];
       const fileExtension = mimeType.split('/')[1] || 'jpg';
 
 
       const imageBuffer = Buffer.from(base64Data, 'base64');
       
       const formData = new FormData();
-      // Create a Blob from the Buffer
       const imageBlob = new Blob([imageBuffer], { type: mimeType });
       formData.append('image_file', imageBlob, `upload.${fileExtension}`);
-      // formData.append('id_search_custom', 'your_custom_id_here'); // Optional: if you want to add custom ID
 
-      console.log(`[FaceCheck Flow] Sending POST request to FaceCheck.ID API with image of type ${mimeType}`);
       const FACECHECK_API_URL = 'https://api.facecheck.id/v1/upload/image_file';
+      console.log(`[FaceCheck Flow] Sending POST request to ${FACECHECK_API_URL} with image of type ${mimeType}`);
       
       const response = await fetch(FACECHECK_API_URL, {
         method: 'POST',
         headers: {
           'X-API-Key': apiKey,
-          // 'Content-Type': 'multipart/form-data' is set automatically by fetch with FormData
+          // 'Content-Type': 'multipart/form-data' // Typically set automatically by fetch with FormData
         },
         body: formData,
       });
@@ -102,20 +102,36 @@ const faceCheckFlow = ai.defineFlow(
       const responseText = await response.text();
       console.log(`[FaceCheck Flow] Received response from FaceCheck.ID API with status: ${response.status} ${response.statusText}`);
       
-      const responseData = JSON.parse(responseText);
-
       if (!response.ok) {
-        console.error('[FaceCheck Flow] Error response details:', responseData);
+        console.error(`[FaceCheck Flow] API returned error. Status: ${response.status}. Raw response (first 500 chars): ${responseText.substring(0, 500)}`);
+        let errorMsg = `FaceCheck.ID API Error (${response.status} ${response.statusText})`;
+        try {
+          const errorJson = JSON.parse(responseText);
+          if (errorJson && errorJson.message) {
+            errorMsg += ` - ${errorJson.message}`;
+          } else if (typeof errorJson === 'string') {
+             errorMsg += ` - ${errorJson}`;
+          }
+        } catch (e) {
+          // Response was not JSON or JSON was malformed
+          if(responseText.length > 0 && responseText.length < 300) { // If response text is short, include it
+            errorMsg += ` - ${responseText}`;
+          } else if (responseText.length === 0) {
+            errorMsg += ` - Empty error response from API.`;
+          }
+        }
         return {
           success: false,
-          message: responseData.message || `FaceCheck.ID API Error (${response.status}): ${response.statusText}`,
-          error: `FaceCheck.ID API Error (${response.status}): ${response.statusText} - ${responseData.message || 'No specific error message.'}`,
+          message: errorMsg,
+          error: errorMsg, 
         };
       }
       
-      // Assuming responseData matches FaceCheckOutputSchema structure on success
+      // If response.ok, now parse for successful data
+      const responseData = JSON.parse(responseText); // This might still throw if success response is not valid JSON
+      
       return {
-        success: responseData.success,
+        success: responseData.success !== undefined ? responseData.success : true, // Assume true if success field is missing but status was 2xx
         id_search: responseData.id_search,
         items_count: responseData.items_count,
         items: responseData.items,
@@ -123,12 +139,22 @@ const faceCheckFlow = ai.defineFlow(
       };
 
     } catch (error) {
-      console.error('[FaceCheck Flow] Exception during API call:', error);
+      console.error('[FaceCheck Flow] Exception during API call or response processing:', error);
       let errorMessage = 'An unexpected error occurred during FaceCheck.ID search.';
       if (error instanceof Error) {
         errorMessage = `FaceCheck.ID Search Exception: ${error.message}`;
+        // Log additional properties if they exist, especially 'cause' for fetch errors
+        if ((error as any).cause) {
+          const cause = (error as any).cause;
+          console.error('[FaceCheck Flow] Fetch error cause:', cause);
+          try {
+            errorMessage += ` Cause: ${JSON.stringify(cause)}`;
+          } catch (stringifyError) {
+            errorMessage += ` Cause: (Could not stringify - ${cause.toString()})`;
+          }
+        }
       }
-      return { success: false, error: errorMessage };
+      return { success: false, error: errorMessage, message: errorMessage };
     }
   }
 );
