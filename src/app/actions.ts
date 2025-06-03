@@ -70,12 +70,10 @@ export async function searchWithRapidApiAction(
     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
   }
 
-  // !!! IMPORTANT: VERIFY AND COMPLETE THE API PATH BELOW !!!
-  // The base path from the user is "/face-recognition/v1".
-  // You may need to append a specific sub-path for the actual search operation
-  // (e.g., "/search", "/analyze", "/searchByImage").
-  // CONSULT THE API DOCUMENTATION for api.lelouchsoft.com.
-  const apiPath = "/face-recognition/v1/detect"; // Updated path
+  // !!! IMPORTANT: YOU MUST VERIFY AND SET THE CORRECT API PATH BELOW !!!
+  // The path '/detect' is a COMMON GUESS. It might be '/search', '/searchByImage', '/v1/some_action' etc.
+  // CONSULT THE API DOCUMENTATION for face-recognition-api1.p.rapidapi.com.
+  const apiPath = "/detect"; // <--- VERIFY THIS PATH! 
   
   if (apiPath.trim() === "" || !apiPath.startsWith("/")) {
      console.error("CRITICAL: RapidAPI path is not configured correctly in src/app/actions.ts. Please set 'apiPath'.");
