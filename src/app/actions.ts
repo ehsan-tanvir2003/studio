@@ -70,7 +70,7 @@ export async function searchWithRapidApiAction(
     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
   }
 
-  const apiPath = "/detect"; 
+  const apiPath = "/face-recognition/v1/detect"; 
   
   if (apiPath.trim() === "" || !apiPath.startsWith("/")) {
      console.error("CRITICAL: RapidAPI path is not configured correctly in src/app/actions.ts. Please set 'apiPath'.");
