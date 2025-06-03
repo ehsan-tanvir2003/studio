@@ -70,10 +70,10 @@ export async function searchWithRapidApiAction(
     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
   }
 
-  // !!! IMPORTANT: YOU MUST VERIFY AND SET THE CORRECT API PATH BELOW !!!
-  // The path '/detect' is a COMMON GUESS. It might be '/search', '/searchByImage', '/v1/some_action' etc.
-  // CONSULT THE API DOCUMENTATION for face-recognition-api1.p.rapidapi.com.
-  const apiPath = "/detect"; // <--- VERIFY THIS PATH! 
+  // !!! IMPORTANT: VERIFY THIS PATH WITH YOUR API DOCUMENTATION !!!
+  // Path updated based on user cURL. Original flow uses POST for image data.
+  // If '/faceApi' expects GET, the rapidApiImageSearchFlow needs significant changes.
+  const apiPath = "/faceApi"; 
   
   if (apiPath.trim() === "" || !apiPath.startsWith("/")) {
      console.error("CRITICAL: RapidAPI path is not configured correctly in src/app/actions.ts. Please set 'apiPath'.");
@@ -168,3 +168,4 @@ export async function analyzeImageFrame(
     return { error: errorMessage };
   }
 }
+
