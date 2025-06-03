@@ -75,7 +75,7 @@ export async function searchWithRapidApiAction(
   // You may need to append a specific sub-path for the actual search operation
   // (e.g., "/search", "/analyze", "/searchByImage").
   // CONSULT THE API DOCUMENTATION for api.lelouchsoft.com.
-  const apiPath = "/face-recognition/v1"; // Base path set. Check if a sub-path like '/search' is needed.
+  const apiPath = "/face-recognition/v1/detect"; // Updated path
   
   if (apiPath.trim() === "" || !apiPath.startsWith("/")) {
      console.error("CRITICAL: RapidAPI path is not configured correctly in src/app/actions.ts. Please set 'apiPath'.");
