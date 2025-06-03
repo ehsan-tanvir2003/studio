@@ -13,49 +13,16 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'placehold.co',
+        hostname: '**', // Allows all hostnames for https
         port: '',
         pathname: '/**',
       },
       {
-        protocol: 'https',
-        hostname: 'maps.googleapis.com',
-        port: '',
-        pathname: '/maps/api/streetview/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'upload.wikimedia.org',
+        protocol: 'http',
+        hostname: '**', // Allows all hostnames for http
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'plus.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.pexels.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'www.southernliving.com',
-        port: '',
-        pathname: '/**',
-      },
-      // Add other potential hostnames if your chosen RapidAPI service
-      // returns image thumbnails from specific domains.
-      // Example:
-      // {
-      //   protocol: 'https',
-      //   hostname: 'some-cdn.rapidapi.com', 
-      //   port: '',
-      //   pathname: '/**', 
-      // },
     ],
   },
 };
