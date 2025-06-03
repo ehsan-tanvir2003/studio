@@ -67,9 +67,9 @@ export async function searchWithRapidApi(
   const host = process.env.RAPIDAPI_HOST;
   const path = "/YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE"; 
 
-  if (!host || host.trim() === "") {
-    console.error('[RapidAPI Action] CRITICAL: RAPIDAPI_HOST is not configured in .env file.');
-    return { success: false, error: "RapidAPI Host is not configured on the server. Please check the .env file." };
+  if (!host || host.trim() === "" || host === "real-time-image-search.p.rapidapi.com") { // Check specific problematic host or generic emptiness
+    console.error('[RapidAPI Action] CRITICAL: RAPIDAPI_HOST is not correctly configured in .env file or is set to a non-functional placeholder for reverse image search.');
+    return { success: false, error: "RapidAPI Host for reverse image search is not configured correctly on the server. Please check the .env file and ensure it's for a reverse image search API." };
   }
   if (path === "/YOUR_REVERSE_IMAGE_SEARCH_PATH_HERE" || path.trim() === "") {
     console.error('[RapidAPI Action] CRITICAL: The API path for reverse image search is not set in src/app/actions.ts.');
@@ -141,10 +141,11 @@ const cameraFrameAnalysisSchema = z.object({
 
 export async function analyzeImageFrame(
   imageDataUri: string
-): Promise<AnalyzeCameraFrameOutput | { error: string }> {
+): Promise<AnalyzeCameraFrameOutput | { error: string }> { // Updated return type
   const validationResult = cameraFrameAnalysisSchema.safeParse({ imageDataUri });
   if (!validationResult.success) {
     return { 
+      // Ensure a default structure for error cases if flow expects AnalyzeCameraFrameOutput
       error: validationResult.error.errors.map(e => e.message).join(', ') 
     };
   }
@@ -153,6 +154,7 @@ export async function analyzeImageFrame(
 
   try {
     const result = await analyzeCameraFrame(input);
+    // The flow itself now returns AnalyzeCameraFrameOutput, so this is fine
     return result;
   } catch (error) {
     console.error("Error in analyzeCameraFrame flow:", error);
@@ -160,6 +162,8 @@ export async function analyzeImageFrame(
      if (error instanceof Error) {
         errorMessage = `Frame analysis failed: ${error.message}`;
     }
+    // For error case, conform to the expected error structure
     return { error: errorMessage };
   }
 }
+
