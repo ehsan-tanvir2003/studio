@@ -33,6 +33,10 @@ export default function CameraFeedAnalyzer() {
     
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
+    if (isLoading) { // If loading, don't draw face boxes, a loading message is handled by captureFrameAndAnalyze
+        return;
+    }
+
     if (!facesToDraw || facesToDraw.length === 0) {
       return;
     }
@@ -61,13 +65,13 @@ export default function CameraFeedAnalyzer() {
           // `Behavior: ${face.observedBehavior}`, // Can be too long
         ];
         
-        let textY = y + 12; // Start text inside the top of the box
+        let textYPosition = y + 12; // Start text inside the top of the box
 
         // Draw semi-transparent background for text
         const textPadding = 4;
         const lineHeight = 14;
         const textBlockHeight = textLines.length * lineHeight + textPadding;
-        // Find max text width for background
+        
         let maxTextWidth = 0;
         textLines.forEach(line => {
             const metrics = ctx.measureText(line);
@@ -76,28 +80,19 @@ export default function CameraFeedAnalyzer() {
             }
         });
         
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black background
-        ctx.fillRect(x, y, maxTextWidth + textPadding * 2, textBlockHeight);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; // Semi-transparent black background
+        ctx.fillRect(x, y, Math.max(width,maxTextWidth + textPadding * 2) , textBlockHeight);
 
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'; // White text for better contrast
-        for (const line of textLines) {
-          // Adjust textY if it goes off top, or place below box
-          if (y + textBlockHeight > canvasElement.height && y - textBlockHeight - 5 > 0){ // if text box goes off bottom and there is space on top
-             textY = y - textBlockHeight + 10; // Shift all text above box
-          } else if (textY < 15 && y + height + textBlockHeight + 5 < canvasElement.height) { // if text box goes off top and there is space on bottom
-            textY = y + height + 15; // Shift all text below box
-          } else {
-            // Default positioning: inside top of box or just above
-             textY = (textLines.indexOf(line) === 0) ? y + lineHeight - textPadding : textY;
-          }
-          ctx.fillText(line, x + textPadding, textY);
-          textY += lineHeight;
-        }
+        textLines.forEach((line, index) => {
+          textYPosition = y + (index * lineHeight) + lineHeight - textPadding; // Position each line correctly
+          ctx.fillText(line, x + textPadding, textYPosition);
+        });
         ctx.fillStyle = 'rgba(74, 222, 128, 0.9)'; // Reset fillStyle for next face if needed
       }
     });
-  }, []);
+  }, [isLoading]); // Added isLoading to dependencies
 
 
   useEffect(() => {
@@ -126,7 +121,6 @@ export default function CameraFeedAnalyzer() {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
       }
-      // Clear overlays when component unmounts
       const canvasElement = overlayCanvasRef.current;
       const ctx = canvasElement?.getContext('2d');
       if(ctx && canvasElement) {
@@ -136,22 +130,44 @@ export default function CameraFeedAnalyzer() {
   }, [toast]);
 
   useEffect(() => {
-    if (analysisResult && videoRef.current && overlayCanvasRef.current) {
-      drawOverlays(analysisResult.faces);
+    // This effect specifically handles drawing overlays when analysisResult changes or isLoading becomes false
+    if (!isLoading && analysisResult && videoRef.current && overlayCanvasRef.current) {
+        drawOverlays(analysisResult.faces);
+    } else if (!isLoading) { // If not loading and no results (e.g. error or cleared)
+        drawOverlays([]); // Clear overlays
     }
-  }, [analysisResult, drawOverlays]);
+  }, [analysisResult, isLoading, drawOverlays]);
 
-  // Redraw overlays if window is resized
+
   useEffect(() => {
     const handleResize = () => {
-      if (analysisResult && videoRef.current && overlayCanvasRef.current) {
-        // A short timeout helps ensure video dimensions are stable after resize
-        setTimeout(() => drawOverlays(analysisResult.faces), 50);
+      if (videoRef.current && overlayCanvasRef.current) {
+        setTimeout(() => {
+            if (!isLoading && analysisResult) { // Only redraw face boxes if not loading and results exist
+                 drawOverlays(analysisResult.faces);
+            } else if (isLoading && overlayCanvasRef.current && videoRef.current) { // Redraw loading message on resize
+                const overlayCanvas = overlayCanvasRef.current;
+                const overlayCtx = overlayCanvas.getContext('2d');
+                if (overlayCtx && videoRef.current) {
+                    overlayCanvas.width = videoRef.current.clientWidth;
+                    overlayCanvas.height = videoRef.current.clientHeight;
+                    overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                    overlayCtx.fillStyle = 'white';
+                    overlayCtx.font = '16px Arial';
+                    overlayCtx.textAlign = 'center';
+                    overlayCtx.textBaseline = 'middle';
+                    overlayCtx.fillText('Analyzing Frame...', overlayCanvas.width / 2, overlayCanvas.height / 2);
+                }
+            } else { // If not loading and no results, ensure canvas is clear
+                drawOverlays([]);
+            }
+        }, 50);
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [analysisResult, drawOverlays]);
+  }, [analysisResult, isLoading, drawOverlays]);
 
 
   const captureFrameAndAnalyze = async () => {
@@ -165,24 +181,40 @@ export default function CameraFeedAnalyzer() {
     }
 
     setIsLoading(true);
-    // Clear previous overlays before new analysis
-    const overlayCtx = overlayCanvasRef.current?.getContext('2d');
-    if(overlayCtx && overlayCanvasRef.current) overlayCtx.clearRect(0,0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
-    setAnalysisResult(null); // Clear previous results from text display
+    setAnalysisResult(null); 
     setError(null);
 
     const video = videoRef.current;
-    const canvas = captureCanvasRef.current; // Use capture canvas for AI
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
-    if (!context) {
+    const captureCanvas = captureCanvasRef.current; 
+    captureCanvas.width = video.videoWidth;
+    captureCanvas.height = video.videoHeight;
+    const captureContext = captureCanvas.getContext('2d');
+    if (!captureContext) {
       setError("Could not get canvas context for capture.");
       setIsLoading(false);
       return;
     }
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageDataUri = canvas.toDataURL('image/jpeg');
+    captureContext.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+    const imageDataUri = captureCanvas.toDataURL('image/jpeg');
+
+    // Draw loading message on overlay canvas
+    const overlayCanvas = overlayCanvasRef.current;
+    if (overlayCanvas && videoRef.current) {
+        const overlayCtx = overlayCanvas.getContext('2d');
+        if (overlayCtx) {
+            overlayCanvas.width = videoRef.current.clientWidth;
+            overlayCanvas.height = videoRef.current.clientHeight;
+            overlayCtx.clearRect(0,0,overlayCanvas.width, overlayCanvas.height); // Clear previous drawings
+            overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            overlayCtx.fillStyle = 'white';
+            overlayCtx.font = 'bold 16px Arial';
+            overlayCtx.textAlign = 'center';
+            overlayCtx.textBaseline = 'middle';
+            overlayCtx.fillText('Analyzing Frame...', overlayCanvas.width / 2, overlayCanvas.height / 2);
+        }
+    }
+
 
     try {
       const result = await analyzeImageFrame(imageDataUri);
@@ -191,7 +223,7 @@ export default function CameraFeedAnalyzer() {
         setAnalysisResult(null);
         toast({ variant: 'destructive', title: 'Analysis Failed', description: result.error });
       } else {
-        setAnalysisResult(result); // This will trigger the useEffect to drawOverlays
+        setAnalysisResult(result); 
         setError(null);
       }
     } catch (e) {
@@ -219,21 +251,40 @@ export default function CameraFeedAnalyzer() {
         <div className="relative aspect-video w-full bg-muted rounded-md overflow-hidden border border-border">
           <video
             ref={videoRef}
-            className="w-full h-full object-cover block" // Ensure video is block for correct layout
+            className="w-full h-full object-cover block" 
             autoPlay
             playsInline
             muted
-            onLoadedData={() => { // Redraw if video resizes itself (e.g. on initial load)
-                 if (analysisResult && videoRef.current && overlayCanvasRef.current) {
-                    setTimeout(() => drawOverlays(analysisResult.faces), 50);
+            onLoadedData={() => { 
+                 if (videoRef.current && overlayCanvasRef.current) {
+                    setTimeout(() => {
+                        if (!isLoading && analysisResult) {
+                             drawOverlays(analysisResult.faces);
+                        } else if (isLoading) {
+                            // Re-draw loading message if video resizes during loading
+                             const overlayCanvas = overlayCanvasRef.current;
+                            const overlayCtx = overlayCanvas.getContext('2d');
+                            if (overlayCtx && videoRef.current) {
+                                overlayCanvas.width = videoRef.current.clientWidth;
+                                overlayCanvas.height = videoRef.current.clientHeight;
+                                overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                                overlayCtx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                                overlayCtx.fillStyle = 'white';
+                                overlayCtx.font = 'bold 16px Arial';
+                                overlayCtx.textAlign = 'center';
+                                overlayCtx.textBaseline = 'middle';
+                                overlayCtx.fillText('Analyzing Frame...', overlayCanvas.width / 2, overlayCanvas.height / 2);
+                            }
+                        }
+                    }, 50);
                 }
             }}
           />
           <canvas 
             ref={overlayCanvasRef} 
-            className="absolute top-0 left-0 w-full h-full pointer-events-none" // Overlay canvas
+            className="absolute top-0 left-0 w-full h-full pointer-events-none" 
           />
-          <canvas ref={captureCanvasRef} className="hidden"></canvas> {/* Hidden canvas for capture */}
+          <canvas ref={captureCanvasRef} className="hidden"></canvas> 
           
           {hasCameraPermission === false && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4">
@@ -242,7 +293,7 @@ export default function CameraFeedAnalyzer() {
               <p className="text-sm text-center">Please enable camera permissions in your browser settings and refresh.</p>
             </div>
           )}
-           {hasCameraPermission === null && (
+           {hasCameraPermission === null && !isLoading && ( // only show if not also loading camera
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4">
               <Loader2 className="w-12 h-12 animate-spin mb-4" />
               <p className="text-lg">Initializing Camera...</p>
