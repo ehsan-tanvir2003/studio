@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, ImageUp, Video } from 'lucide-react'; // Changed Search to ImageUp
+import { ArrowRight, RadioTower, Binary, ImageUp, Video, Smartphone } from 'lucide-react'; // Added Smartphone
 import * as React from 'react'; 
 
 export default function HubPage() {
@@ -24,13 +24,13 @@ export default function HubPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full max-w-4xl"> {/* Adjusted grid for 4 items */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full max-w-4xl">
         <Link href="/info-sleuth" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-primary/30 hover:border-primary/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-primary/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-2xl sm:text-3xl font-headline text-primary flex items-center">
-                  <ImageUp className="mr-3 h-7 w-7 sm:h-8 sm:w-8" /> {/* Updated Icon */}
+                  <ImageUp className="mr-3 h-7 w-7 sm:h-8 sm:w-8" />
                   Reverse Image Search
                 </CardTitle>
                 <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
@@ -45,6 +45,26 @@ export default function HubPage() {
           </Card>
         </Link>
 
+        <Link href="/caller-id-checker" passHref>
+          <Card className="bg-card/80 hover:bg-card/100 border-purple-500/30 hover:border-purple-500/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-purple-500/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
+            <CardHeader className="flex-grow">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl sm:text-3xl font-headline text-purple-500 flex items-center">
+                  <Smartphone className="mr-3 h-7 w-7 sm:h-8 sm:w-8" />
+                  Caller ID Checker
+                </CardTitle>
+                <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-purple-500" />
+              </div>
+              <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
+                Look up phone number details (name, photo, social media) using the Eyecon RapidAPI service.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-primary font-code">Check Number &gt;</p>
+            </CardContent>
+          </Card>
+        </Link>
+        
         <Link href="/cell-locator" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-accent/30 hover:border-accent/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-accent/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
@@ -85,15 +105,6 @@ export default function HubPage() {
           </Card>
         </Link>
         
-        {/* Placeholder for a potential fourth tool or can be removed */}
-        <Card className="bg-card/60 border-dashed border-border/50 flex flex-col h-full items-center justify-center opacity-70">
-            <CardHeader className="text-center">
-                <CardTitle className="text-xl font-headline text-muted-foreground">Future Tool Slot</CardTitle>
-                <CardDescription className="font-code text-xs text-muted-foreground/80">
-                    Another OSINT capability coming soon...
-                </CardDescription>
-            </CardHeader>
-        </Card>
       </div>
 
       <div className="mt-12 p-6 border border-dashed border-muted-foreground/30 rounded-lg bg-card/50 max-w-2xl w-full">

@@ -5,7 +5,8 @@
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { analyzeCameraFrame, type AnalyzeCameraFrameInput, type AnalyzeCameraFrameOutput } from '@/ai/flows/analyze-camera-frame-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
-import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow'; // Updated import
+import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow';
+import { searchCallerId, type CallerIdSearchInput, type CallerIdSearchOutput } from '@/ai/flows/caller-id-search-flow'; // New import
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -65,12 +66,12 @@ export async function searchWithRapidApiAction(
     };
   }
 
-  const rapidApiHost = process.env.RAPIDAPI_HOST; // Should be face-recognition-api1.p.rapidapi.com
+  const rapidApiHost = process.env.RAPIDAPI_HOST; 
   if (!rapidApiHost) {
     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
   }
 
-  const apiPath = "/detect"; // Endpoint for face-recognition-api1
+  const apiPath = "/detect"; 
   
   console.log(`[RapidAPI Action] Constructed full endpoint URL: https://${rapidApiHost}${apiPath}`);
   
@@ -80,7 +81,7 @@ export async function searchWithRapidApiAction(
   };
 
   try {
-    const result = await searchImageWithRapidApi(flowInput); // Calling updated flow
+    const result = await searchImageWithRapidApi(flowInput);
     return result;
   } catch (error) {
     console.error("Error in searchImageWithRapidApi flow:", error);
@@ -157,5 +158,39 @@ export async function analyzeImageFrame(
         errorMessage = `Frame analysis failed: ${error.message}`;
     }
     return { error: errorMessage };
+  }
+}
+
+// --- Caller ID Search (using Eyecon RapidAPI) ---
+const callerIdSearchActionSchema = z.object({
+  phoneNumber: z.string().min(7, "Phone number seems too short.").regex(/^[0-9]+$/, "Phone number should only contain digits."),
+});
+
+export async function searchCallerIdDetails(
+  phoneNumber: string
+): Promise<CallerIdSearchOutput> {
+  const validationResult = callerIdSearchActionSchema.safeParse({ phoneNumber });
+  if (!validationResult.success) {
+    return {
+      success: false,
+      error: validationResult.error.errors.map(e => e.message).join(', '),
+      message: validationResult.error.errors.map(e => e.message).join(', '),
+    };
+  }
+
+  const flowInput: CallerIdSearchInput = { 
+    phoneNumber: validationResult.data.phoneNumber,
+  };
+
+  try {
+    const result = await searchCallerId(flowInput);
+    return result;
+  } catch (error) {
+    console.error("Error in searchCallerId flow:", error);
+    let errorMessage = "An unexpected error occurred during Caller ID search.";
+    if (error instanceof Error) {
+      errorMessage = `Caller ID search failed: ${error.message}`;
+    }
+    return { success: false, error: errorMessage, message: errorMessage };
   }
 }
