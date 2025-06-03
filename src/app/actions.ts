@@ -70,10 +70,7 @@ export async function searchWithRapidApiAction(
     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
   }
 
-  // !!! IMPORTANT: VERIFY THIS PATH WITH YOUR API DOCUMENTATION !!!
-  // Path updated based on user cURL. Original flow uses POST for image data.
-  // If '/faceApi' expects GET, the rapidApiImageSearchFlow needs significant changes.
-  const apiPath = "/faceApi"; 
+  const apiPath = "/detect"; 
   
   if (apiPath.trim() === "" || !apiPath.startsWith("/")) {
      console.error("CRITICAL: RapidAPI path is not configured correctly in src/app/actions.ts. Please set 'apiPath'.");
