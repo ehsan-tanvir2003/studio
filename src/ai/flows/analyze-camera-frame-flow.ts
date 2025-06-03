@@ -1,12 +1,13 @@
 
 'use server';
 /**
- * @fileOverview Analyzes an image frame from a camera feed, focusing on facial details.
+ * @fileOverview Analyzes an image frame from a camera feed, focusing on facial details
+ * and providing bounding boxes for detected faces.
  *
  * - analyzeCameraFrame - A function that takes an image data URI and returns facial analysis.
  * - AnalyzeCameraFrameInput - The input type for the analyzeCameraFrame function.
  * - AnalyzeCameraFrameOutput - The return type for the analyzeCameraFrame function.
- * - FaceAnalysis - Schema for details of a single detected face.
+ * - FaceAnalysis - Schema for details of a single detected face, including its bounding box.
  */
 
 import { ai } from '@/ai/genkit';
@@ -26,6 +27,12 @@ const FaceAnalysisSchema = z.object({
   estimatedGender: z.string().describe('Estimated gender of the person (e.g., Male, Female, Unclear).'),
   observedMood: z.string().describe('Observed dominant mood or emotion (e.g., Happy, Sad, Neutral, Surprised, Angry, Focused).'),
   observedBehavior: z.string().describe('Observed behavior or action (e.g., Smiling, Looking at camera, Talking, Yawning, Looking away).'),
+  boundingBox: z.object({
+    x: z.number().min(0).max(1).describe('Normalized X coordinate of the top-left corner of the bounding box (0.0 to 1.0).'),
+    y: z.number().min(0).max(1).describe('Normalized Y coordinate of the top-left corner of the bounding box (0.0 to 1.0).'),
+    width: z.number().min(0).max(1).describe('Normalized width of the bounding box (0.0 to 1.0).'),
+    height: z.number().min(0).max(1).describe('Normalized height of the bounding box (0.0 to 1.0).'),
+  }).optional().describe('Bounding box of the detected face, with origin at the top-left. Provided if a face is clearly identifiable for boxing.')
 });
 export type FaceAnalysis = z.infer<typeof FaceAnalysisSchema>;
 
@@ -48,6 +55,7 @@ const prompt = ai.definePrompt({
 2.  Estimated Gender (e.g., Male, Female, Unclear).
 3.  Observed Dominant Mood/Emotion (e.g., Happy, Sad, Neutral, Surprised, Angry, Focused).
 4.  Observed Behavior/Action (e.g., Smiling, Looking at the camera, Talking, Yawning, Looking away).
+5.  A 'boundingBox' object containing 'x', 'y', 'width', and 'height' fields. These should be **normalized coordinates (ranging from 0.0 to 1.0)** relative to the image dimensions, where (x,y) represents the **top-left corner** of the bounding box. If a face cannot be clearly boxed, you may omit the boundingBox for that specific face.
 
 If multiple faces are present, provide these details for each.
 Your 'detectionSummary' should state how many faces were analyzed or if no clearly analyzable faces were detected.
