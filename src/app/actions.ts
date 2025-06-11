@@ -3,10 +3,10 @@
 "use server";
 
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
-import { analyzeCameraFrame, type AnalyzeCameraFrameInput, type AnalyzeCameraFrameOutput } from '@/ai/flows/analyze-camera-frame-flow';
+// import { analyzeCameraFrame, type AnalyzeCameraFrameInput, type AnalyzeCameraFrameOutput } from '@/ai/flows/analyze-camera-frame-flow'; // Removed
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
-import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow';
-import { searchCallerId, type CallerIdSearchInput, type CallerIdSearchOutput } from '@/ai/flows/caller-id-search-flow'; // New import
+// import { searchImageWithRapidApi, type RapidApiImageSearchInput, type RapidApiImageSearchOutput } from '@/ai/flows/rapidapi-face-search-flow'; // Removed
+import { searchCallerId, type CallerIdSearchInput, type CallerIdSearchOutput } from '@/ai/flows/caller-id-search-flow';
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -49,49 +49,49 @@ export async function searchPdlProfiles(
   }
 }
 
-// --- RapidAPI Reverse Image Search ---
-const rapidApiImageSearchActionInputSchema = z.object({
-  imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
-});
+// --- RapidAPI Reverse Image Search (REMOVED) ---
+// const rapidApiImageSearchActionInputSchema = z.object({
+//   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
+// });
 
-export async function searchWithRapidApiAction(
-  imageDataUri: string
-): Promise<RapidApiImageSearchOutput> {
-  const validationResult = rapidApiImageSearchActionInputSchema.safeParse({ imageDataUri });
-  if (!validationResult.success) {
-    return {
-      success: false,
-      error: validationResult.error.errors.map(e => e.message).join(', '),
-      message: validationResult.error.errors.map(e => e.message).join(', '),
-    };
-  }
+// export async function searchWithRapidApiAction(
+//   imageDataUri: string
+// ): Promise<RapidApiImageSearchOutput> {
+//   const validationResult = rapidApiImageSearchActionInputSchema.safeParse({ imageDataUri });
+//   if (!validationResult.success) {
+//     return {
+//       success: false,
+//       error: validationResult.error.errors.map(e => e.message).join(', '),
+//       message: validationResult.error.errors.map(e => e.message).join(', '),
+//     };
+//   }
 
-  const rapidApiHost = process.env.RAPIDAPI_HOST; 
-  if (!rapidApiHost) {
-    return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
-  }
+//   const rapidApiHost = process.env.RAPIDAPI_HOST; 
+//   if (!rapidApiHost) {
+//     return { success: false, error: "RAPIDAPI_HOST is not configured in .env file.", message: "Server configuration error." };
+//   }
 
-  const apiPath = "/detect"; 
+//   const apiPath = "/detect"; 
   
-  console.log(`[RapidAPI Action] Constructed full endpoint URL: https://${rapidApiHost}${apiPath}`);
+//   console.log(`[RapidAPI Action] Constructed full endpoint URL: https://${rapidApiHost}${apiPath}`);
   
-  const flowInput: RapidApiImageSearchInput = { 
-    imageDataUri: validationResult.data.imageDataUri,
-    apiEndpointUrl: `https://${rapidApiHost}${apiPath}`, 
-  };
+//   const flowInput: RapidApiImageSearchInput = { 
+//     imageDataUri: validationResult.data.imageDataUri,
+//     apiEndpointUrl: `https://${rapidApiHost}${apiPath}`, 
+//   };
 
-  try {
-    const result = await searchImageWithRapidApi(flowInput);
-    return result;
-  } catch (error) {
-    console.error("Error in searchImageWithRapidApi flow:", error);
-    let errorMessage = "An unexpected error occurred during RapidAPI image search.";
-    if (error instanceof Error) {
-      errorMessage = `RapidAPI image search failed: ${error.message}`;
-    }
-    return { success: false, error: errorMessage, message: errorMessage };
-  }
-}
+//   try {
+//     const result = await searchImageWithRapidApi(flowInput);
+//     return result;
+//   } catch (error) {
+//     console.error("Error in searchImageWithRapidApi flow:", error);
+//     let errorMessage = "An unexpected error occurred during RapidAPI image search.";
+//     if (error instanceof Error) {
+//       errorMessage = `RapidAPI image search failed: ${error.message}`;
+//     }
+//     return { success: false, error: errorMessage, message: errorMessage };
+//   }
+// }
 
 
 // --- Cell Tower Locator (using Unwired Labs) ---
@@ -131,35 +131,35 @@ export async function locateCellTower(
   return fetchCellTowerLocationFromUnwiredLabs(apiKey, BANGLADESH_MCC, mncNumber, lac, cellId, 'gsm');
 }
 
-// --- Camera Frame Analysis ---
-const cameraFrameAnalysisSchema = z.object({
-  imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
-});
+// --- Camera Frame Analysis (REMOVED) ---
+// const cameraFrameAnalysisSchema = z.object({
+//   imageDataUri: z.string().startsWith('data:image/', { message: "Image data URI must start with 'data:image/'" }),
+// });
 
-export async function analyzeImageFrame(
-  imageDataUri: string
-): Promise<AnalyzeCameraFrameOutput | { error: string }> {
-  const validationResult = cameraFrameAnalysisSchema.safeParse({ imageDataUri });
-  if (!validationResult.success) {
-    return { 
-      error: validationResult.error.errors.map(e => e.message).join(', ') 
-    };
-  }
+// export async function analyzeImageFrame(
+//   imageDataUri: string
+// ): Promise<AnalyzeCameraFrameOutput | { error: string }> {
+//   const validationResult = cameraFrameAnalysisSchema.safeParse({ imageDataUri });
+//   if (!validationResult.success) {
+//     return { 
+//       error: validationResult.error.errors.map(e => e.message).join(', ') 
+//     };
+//   }
 
-  const input: AnalyzeCameraFrameInput = validationResult.data;
+//   const input: AnalyzeCameraFrameInput = validationResult.data;
 
-  try {
-    const result = await analyzeCameraFrame(input);
-    return result;
-  } catch (error) {
-    console.error("Error in analyzeCameraFrame flow:", error);
-    let errorMessage = "An unexpected error occurred during image frame analysis.";
-     if (error instanceof Error) {
-        errorMessage = `Frame analysis failed: ${error.message}`;
-    }
-    return { error: errorMessage };
-  }
-}
+//   try {
+//     const result = await analyzeCameraFrame(input);
+//     return result;
+//   } catch (error) {
+//     console.error("Error in analyzeCameraFrame flow:", error);
+//     let errorMessage = "An unexpected error occurred during image frame analysis.";
+//      if (error instanceof Error) {
+//         errorMessage = `Frame analysis failed: ${error.message}`;
+//     }
+//     return { error: errorMessage };
+//   }
+// }
 
 // --- Caller ID Search (using Eyecon RapidAPI) ---
 const callerIdSearchActionSchema = z.object({
@@ -194,3 +194,4 @@ export async function searchCallerIdDetails(
     return { success: false, error: errorMessage, message: errorMessage };
   }
 }
+
