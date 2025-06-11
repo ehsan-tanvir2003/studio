@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, Smartphone } from 'lucide-react'; // Removed ImageUp, Video
+import { ArrowRight, RadioTower, Binary, Smartphone } from 'lucide-react'; 
 import * as React from 'react'; 
 
 export default function HubPage() {
@@ -25,8 +25,6 @@ export default function HubPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full max-w-4xl">
-        {/* Removed Reverse Image Search Card */}
-
         <Link href="/caller-id-checker" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-purple-500/30 hover:border-purple-500/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-purple-500/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
@@ -66,8 +64,6 @@ export default function HubPage() {
             </CardContent>
           </Card>
         </Link>
-
-        {/* Removed Camera Analyzer Card */}
         
       </div>
 
@@ -85,4 +81,3 @@ export default function HubPage() {
     </div>
   );
 }
-

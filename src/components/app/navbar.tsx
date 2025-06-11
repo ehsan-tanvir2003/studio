@@ -3,15 +3,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Smartphone } from 'lucide-react'; // Removed ImageUp, Video
+import { Home, RadioTower, Binary, Smartphone } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
-  // { href: '/info-sleuth', label: 'Reverse Image', icon: ImageUp }, // Removed
   { href: '/caller-id-checker', label: 'Caller ID', icon: Smartphone },
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
-  // { href: '/camera-analyzer', label: 'Live Analyze', icon: Video }, // Removed
 ];
 
 export default function Navbar() {
@@ -52,4 +50,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
