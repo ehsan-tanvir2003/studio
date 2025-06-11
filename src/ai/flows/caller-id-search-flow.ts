@@ -23,6 +23,7 @@ const SocialMediaInfoSchema = z.object({
   name: z.string().optional().nullable().describe("Name associated with the social media profile"),
   photo: z.string().url().optional().nullable().describe("URL to profile photo on social media"),
 });
+export type SocialMediaInfo = z.infer<typeof SocialMediaInfoSchema>;
 
 const CallerIdDataSchema = z.object({
   name: z.string().optional().nullable().describe('The name associated with the phone number.'),

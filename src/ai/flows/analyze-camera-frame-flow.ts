@@ -38,7 +38,8 @@ export type FaceAnalysis = z.infer<typeof FaceAnalysisSchema>;
 
 const AnalyzeCameraFrameOutputSchema = z.object({
   faces: z.array(FaceAnalysisSchema).describe("An array of analyses for each detected face. Empty if no faces are detected or analyzable."),
-  detectionSummary: z.string().describe("A brief summary, e.g., 'Detected 2 faces.' or 'No clearly analyzable faces were detected.'")
+  detectionSummary: z.string().describe("A brief summary, e.g., 'Detected 2 faces.' or 'No clearly analyzable faces were detected.'"),
+  error: z.string().optional().describe("Error message if the analysis failed.")
 });
 export type AnalyzeCameraFrameOutput = z.infer<typeof AnalyzeCameraFrameOutputSchema>;
 
@@ -49,7 +50,7 @@ export async function analyzeCameraFrame(input: AnalyzeCameraFrameInput): Promis
 const prompt = ai.definePrompt({
   name: 'analyzeCameraFramePrompt',
   input: { schema: AnalyzeCameraFrameInputSchema },
-  output: { schema: AnalyzeCameraFrameOutputSchema },
+  output: { schema: AnalyzeCameraFrameOutputSchema.omit({ error: true }) }, // The prompt itself doesn't output an error field
   prompt: `You are an AI assistant specialized in analyzing human faces in images. Your task is to describe visible faces, but **do not attempt to identify or name individuals**. For each clearly visible face in the following image frame, provide:
 1.  Estimated Age Range (e.g., 20-25, 40s, child, adult, senior).
 2.  Estimated Gender (e.g., Male, Female, Unclear).
@@ -72,18 +73,40 @@ const analyzeCameraFrameFlow = ai.defineFlow(
     outputSchema: AnalyzeCameraFrameOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      return { 
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        return { 
+          faces: [],
+          detectionSummary: "The AI could not provide an analysis for this frame.",
+          error: "AI model returned no output."
+        };
+      }
+      // Ensure faces is an array even if the LLM fails to provide it as one sometimes
+      if (!Array.isArray(output.faces)) {
+          output.faces = [];
+      }
+      return output;
+    } catch (err) {
+      console.error('[analyzeCameraFrameFlow] Error during prompt execution:', err);
+      let errorMessage = "An unexpected error occurred during AI frame analysis.";
+      if (err instanceof Error) {
+        errorMessage = `AI analysis failed: ${err.message}`;
+      }
+      // Check if error message indicates an API key issue for Google AI
+      if (typeof err === 'string' && (err.toLowerCase().includes('api key not valid') || err.toLowerCase().includes('permission denied'))) {
+        errorMessage = `AI analysis failed: Invalid or missing GEMINI_API_KEY. Please check server configuration. Original error: ${err}`;
+      } else if (err instanceof Error && (err.message.toLowerCase().includes('api key not valid') || err.message.toLowerCase().includes('permission denied'))) {
+        errorMessage = `AI analysis failed: Invalid or missing GEMINI_API_KEY. Please check server configuration. Original error: ${err.message}`;
+      }
+      
+      return {
         faces: [],
-        detectionSummary: "The AI could not provide an analysis for this frame." 
+        detectionSummary: "Analysis could not be completed due to an error.",
+        error: errorMessage
       };
     }
-    // Ensure faces is an array even if the LLM fails to provide it as one sometimes
-    if (!Array.isArray(output.faces)) {
-        output.faces = [];
-    }
-    return output;
   }
 );
 
+    

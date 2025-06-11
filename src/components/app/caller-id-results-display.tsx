@@ -79,7 +79,7 @@ const SocialMediaLink: React.FC<{ social: SocialMediaInfo }> = ({ social }) => {
             "flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50 transition-colors",
             linkUrl ? "cursor-pointer" : "cursor-default"
         )}
-        title={social.id || social.name || social.type}
+        title={social.id || social.name || social.type || undefined}
     >
       {social.photo ? (
         <Avatar className="h-8 w-8">

@@ -1,8 +1,10 @@
 
 "use client";
 
+"use client";
+
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'; // Keep this import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, AlertTriangle, Sparkles, VideoOff } from 'lucide-react';
@@ -263,8 +265,7 @@ export default function CameraFeedAnalyzer() {
                         } else if (isLoading) {
                             // Re-draw loading message if video resizes during loading
                              const overlayCanvas = overlayCanvasRef.current;
-                            const overlayCtx = overlayCanvas.getContext('2d');
-                            if (overlayCtx && videoRef.current) {
+ if (overlayCanvas && videoRef.current) {                            const overlayCtx = overlayCanvas.getContext('2d');                            if (overlayCtx) {
                                 overlayCanvas.width = videoRef.current.clientWidth;
                                 overlayCanvas.height = videoRef.current.clientHeight;
                                 overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';

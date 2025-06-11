@@ -17,7 +17,7 @@ const PdlPersonSearchInputSchema = z.object({
   location: z.string().optional().describe('The location (e.g., city, region, country) to search within. Optional.'),
   size: z.number().optional().default(10).describe('Number of results to return.'),
 });
-type PdlPersonSearchInput = z.infer<typeof PdlPersonSearchInputSchema>;
+export type PdlPersonSearchInput = z.infer<typeof PdlPersonSearchInputSchema>;
 
 const PdlPersonSchema = z.object({
   id: z.string().nullable().describe('PDL ID of the person.'),
@@ -51,7 +51,7 @@ const PdlPersonSearchOutputSchema = z.object({
   pdlQuery: z.string().optional().describe('The Elasticsearch-style JSON query sent to PDL.'),
   error: z.string().optional().describe('Error message if the search failed.'),
 });
-type PdlPersonSearchOutput = z.infer<typeof PdlPersonSearchOutputSchema>;
+export type PdlPersonSearchOutput = z.infer<typeof PdlPersonSearchOutputSchema>;
 
 
 export async function searchPdlPersonProfiles(input: PdlPersonSearchInput): Promise<PdlPersonSearchOutput> {
