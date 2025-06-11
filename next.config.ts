@@ -3,7 +3,6 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone', // Added for optimized deployment
-  /* config options here */
   images: {
     remotePatterns: [
       {
@@ -20,6 +19,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Ensure that TypeScript and ESLint errors are not ignored during builds
+  // typescript: {
+  //   ignoreBuildErrors: false,
+  // },
+  // eslint: {
+  //   ignoreDuringBuilds: false,
+  // },
 };
 
 export default nextConfig;
