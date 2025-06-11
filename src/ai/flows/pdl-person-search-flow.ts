@@ -43,7 +43,7 @@ const PdlPersonSchema = z.object({
   summary: z.string().nullable().describe('Professional summary.'),
   dataset_version: z.string().optional().describe('PDL dataset version.'),
 });
-type PdlPerson = z.infer<typeof PdlPersonSchema>;
+export type PdlPerson = z.infer<typeof PdlPersonSchema>;
 
 const PdlPersonSearchOutputSchema = z.object({
   matches: z.array(PdlPersonSchema).describe('Array of matching person profiles from PDL.'),
