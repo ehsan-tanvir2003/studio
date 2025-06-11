@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -38,8 +39,23 @@ const summarizeDocumentFlow = ai.defineFlow(
     inputSchema: SummarizeDocumentInputSchema,
     outputSchema: SummarizeDocumentOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input): Promise<SummarizeDocumentOutput> => {
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        console.error('[summarizeDocumentFlow] Prompt returned no output.');
+        return { summary: '[Error: No summary could be generated due to missing output from AI model.]' };
+      }
+      return output;
+    } catch (error) {
+      console.error('[summarizeDocumentFlow] Error during document summarization:', error);
+      let errorMessage = 'Error during summarization.';
+      if (error instanceof Error) {
+        errorMessage = `Error during summarization: ${error.message}`;
+      }
+      // Truncate if too long, as summary might have length constraints in UI
+      const displayError = `[AI Summary Error: ${errorMessage.substring(0, 200)}${errorMessage.length > 200 ? '...' : ''}]`;
+      return { summary: displayError };
+    }
   }
 );
