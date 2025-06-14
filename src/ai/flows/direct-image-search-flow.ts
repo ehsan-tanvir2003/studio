@@ -65,24 +65,27 @@ const directImageSearchFlow = ai.defineFlow(
     const rapidApiEndpointPath = process.env.RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH;
 
     console.log('[Direct Image Search Flow] Invoked.');
+    console.log(`[Direct Image Search Flow] Attempting to use RAPIDAPI_KEY (starts with): ${rapidApiKey ? rapidApiKey.substring(0, Math.min(5, rapidApiKey.length)) : 'NOT SET'}`);
+    console.log(`[Direct Image Search Flow] Attempting to use RAPIDAPI_DIRECT_IMAGE_UPLOAD_HOST: ${rapidApiHost || 'NOT SET'}`);
+    console.log(`[Direct Image Search Flow] Attempting to use RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH: ${rapidApiEndpointPath || 'NOT SET'}`);
+
 
     if (!rapidApiKey || rapidApiKey.trim() === "") {
       console.error('[Direct Image Search Flow] CRITICAL: RAPIDAPI_KEY is not configured.');
-      return { success: false, error: 'RAPIDAPI_KEY is not configured.', message: 'Server configuration error.' };
+      return { success: false, error: 'RAPIDAPI_KEY is not configured.', message: 'Server configuration error: API Key missing.' };
     }
     if (!rapidApiHost || rapidApiHost.trim() === "") {
       console.error('[Direct Image Search Flow] CRITICAL: RAPIDAPI_DIRECT_IMAGE_UPLOAD_HOST is not configured.');
-      return { success: false, error: 'RAPIDAPI_DIRECT_IMAGE_UPLOAD_HOST is not configured.', message: 'Server configuration error.' };
+      return { success: false, error: 'RAPIDAPI_DIRECT_IMAGE_UPLOAD_HOST is not configured.', message: 'Server configuration error: API Host missing.' };
     }
     if (!rapidApiEndpointPath || rapidApiEndpointPath.trim() === "") {
       console.error('[Direct Image Search Flow] CRITICAL: RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH is not configured.');
-      return { success: false, error: 'RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH is not configured.', message: 'Server configuration error.' };
+      return { success: false, error: 'RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH is not configured.', message: 'Server configuration error: API Path missing.' };
     }
 
     const apiEndpointUrl = `https://${rapidApiHost}${rapidApiEndpointPath.startsWith('/') ? '' : '/'}${rapidApiEndpointPath}`;
     
-    console.log(`[Direct Image Search Flow] Using Key (starts with: ${rapidApiKey.substring(0, Math.min(5, rapidApiKey.length))})`);
-    console.log(`[Direct Image Search Flow] Target Host: ${rapidApiHost}, Path: ${rapidApiEndpointPath}, Full URL: ${apiEndpointUrl}`);
+    console.log(`[Direct Image Search Flow] Constructed Target API Endpoint URL: ${apiEndpointUrl}`);
 
     try {
       const { imageDataUri } = input;
@@ -148,6 +151,11 @@ const directImageSearchFlow = ai.defineFlow(
           // Add raw response text if it's short and not HTML
           errorMsg += ` - ${responseText}`;
         }
+        // Specific check for 404
+        if (response.status === 404) {
+          errorMsg += ` - API endpoint not found. Please verify RAPIDAPI_DIRECT_IMAGE_UPLOAD_HOST ('${rapidApiHost}') and RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH ('${rapidApiEndpointPath}') in your .env file. The constructed URL was: ${apiEndpointUrl}`;
+        }
+
         return {
           success: false,
           matches: null,
@@ -212,5 +220,4 @@ const directImageSearchFlow = ai.defineFlow(
     }
   }
 );
-
     
