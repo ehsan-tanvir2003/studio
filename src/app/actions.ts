@@ -5,7 +5,7 @@
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
 import { searchCallerId, type CallerIdSearchInput, type CallerIdSearchOutput } from '@/ai/flows/caller-id-search-flow';
-import { searchVisualMatchesWithUrl, type VisualMatchesInput, type VisualMatchesOutput } from '@/ai/flows/visual-matches-flow';
+import { searchWithImageData, type DirectImageSearchInput, type DirectImageSearchOutput } from '@/ai/flows/direct-image-search-flow'; // Updated import
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -122,42 +122,40 @@ export async function searchCallerIdDetails(
   }
 }
 
-// --- Visual Matches Image Search (using Real-Time Lens Data RapidAPI) ---
-const visualMatchesSearchActionSchema = z.object({
-  imageUrl: z.string().url("A valid public HTTP/HTTPS URL for the image is required."),
-  language: z.string().optional(),
-  country: z.string().optional(),
+// --- Direct Image Upload Search (using a configured RapidAPI service) ---
+const directImageSearchActionSchema = z.object({
+  imageDataUri: z.string().startsWith('data:image/', "Invalid image data URI format."),
 });
 
-export async function searchVisualMatchesAction(
-  imageUrl: string,
-  language?: string,
-  country?: string
-): Promise<VisualMatchesOutput> {
-  const validationResult = visualMatchesSearchActionSchema.safeParse({ imageUrl, language, country });
+export async function searchWithDirectImageUploadAction(
+  imageDataUri: string
+): Promise<DirectImageSearchOutput> {
+  const validationResult = directImageSearchActionSchema.safeParse({ imageDataUri });
   if (!validationResult.success) {
+    const errorMessage = validationResult.error.errors.map(e => e.message).join(', ');
     return {
       success: false,
-      error: validationResult.error.errors.map(e => e.message).join(', '),
-      message: validationResult.error.errors.map(e => e.message).join(', '),
+      matches: null,
+      error: errorMessage,
+      message: errorMessage,
     };
   }
 
-  const flowInput: VisualMatchesInput = { 
-    imageUrl: validationResult.data.imageUrl,
-    language: validationResult.data.language,
-    country: validationResult.data.country,
+  const flowInput: DirectImageSearchInput = { 
+    imageDataUri: validationResult.data.imageDataUri,
   };
 
   try {
-    const result = await searchVisualMatchesWithUrl(flowInput);
+    const result = await searchWithImageData(flowInput);
     return result;
   } catch (error) {
-    console.error("Error in searchVisualMatchesWithUrl flow:", error);
-    let errorMessage = "An unexpected error occurred during visual matches search.";
+    console.error("Error in searchWithImageData flow:", error);
+    let errorMessage = "An unexpected error occurred during direct image search.";
     if (error instanceof Error) {
-      errorMessage = `Visual matches search failed: ${error.message}`;
+      errorMessage = `Direct image search failed: ${error.message}`;
     }
-    return { success: false, error: errorMessage, message: errorMessage };
+    return { success: false, matches: null, error: errorMessage, message: errorMessage };
   }
 }
+
+    

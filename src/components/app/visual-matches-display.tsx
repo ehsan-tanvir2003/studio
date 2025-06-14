@@ -1,22 +1,22 @@
 
 "use client";
 
-import type { VisualMatchesOutput, VisualMatch } from '@/ai/flows/visual-matches-flow';
+import type { DirectImageSearchOutput, DirectVisualMatch } from '@/ai/flows/direct-image-search-flow'; // Updated import
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { 
-    CheckCircle, XCircle, Info, Link as LinkIcon, ExternalLink, Image as ImageIconLucide, SearchCheck, ShoppingCart, Tag, Globe
+    Info, Link as LinkIcon, ExternalLink, Image as ImageIconLucide, SearchCheck, ShoppingCart, Percent // Replaced Tag with Percent for score
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface VisualMatchesDisplayProps {
-  results: VisualMatchesOutput;
+  results: DirectImageSearchOutput; // Updated prop type
 }
 
-const MatchCard: React.FC<{ match: VisualMatch }> = ({ match }) => {
+const MatchCard: React.FC<{ match: DirectVisualMatch }> = ({ match }) => { // Updated prop type
   return (
     <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 bg-card/80 border border-border/30">
       {match.thumbnailUrl && (
@@ -24,8 +24,8 @@ const MatchCard: React.FC<{ match: VisualMatch }> = ({ match }) => {
           <Image 
             src={match.thumbnailUrl} 
             alt={match.title || 'Visual match thumbnail'} 
-            layout="fill" 
-            objectFit="contain" 
+            fill // Use fill for responsive images within a sized container
+            style={{ objectFit: 'contain' }} // ensure image is contained
             className="p-1"
             data-ai-hint="visual match product"
           />
@@ -37,13 +37,17 @@ const MatchCard: React.FC<{ match: VisualMatch }> = ({ match }) => {
       </CardHeader>
       <CardContent className="space-y-2 text-sm pt-0 pb-4">
         {match.price && (
-          <Badge variant="secondary" className="font-semibold bg-accent/20 text-accent-foreground">
+          <Badge variant="secondary" className="font-semibold bg-accent/20 text-accent-foreground mr-1">
             <ShoppingCart className="w-3 h-3 mr-1.5"/> {match.price}
           </Badge>
         )}
-        {/* Add more details here if needed, e.g., brand, rating */}
+        {typeof match.score === 'number' && (
+           <Badge variant="outline" className="font-normal border-primary/40 text-primary/90">
+             <Percent className="w-3 h-3 mr-1.5"/> Score: {match.score.toFixed(2)}
+           </Badge>
+        )}
       </CardContent>
-      {match.link && (
+      {match.link && ( // 'link' field from DirectVisualMatch
         <CardFooter className="bg-muted/30 p-3">
           <a
             href={match.link}
@@ -82,10 +86,10 @@ export default function VisualMatchesDisplay({ results }: VisualMatchesDisplayPr
         </CardHeader>
 
         <CardContent className="p-4 sm:p-6">
-          {!success && (error || message) && (
+          {!success && (error || message) && ( // Check for error or message when not successful
             <Alert variant="destructive">
-              <XCircle className="h-5 w-5" />
-              <AlertTitle>API Error</AlertTitle>
+              <Info className="h-5 w-5" /> {/* Using Info for general error, XCircle might be too strong if it's just a message */}
+              <AlertTitle>API Problem</AlertTitle>
               <AlertDescription className="break-all">{error || message || "An unknown error occurred with the image search API."}</AlertDescription>
             </Alert>
           )}
@@ -116,10 +120,10 @@ export default function VisualMatchesDisplay({ results }: VisualMatchesDisplayPr
       </Card>
       
       <Accordion type="single" collapsible className="w-full">
-        <AccordionItem value="raw-json-visual-matches">
+        <AccordionItem value="raw-json-direct-image-search">
           <AccordionTrigger className="text-sm font-code text-muted-foreground hover:text-primary py-2 bg-card/50 px-4 rounded-md border border-border/30 shadow-sm">View Raw API JSON Response (Debug)</AccordionTrigger>
-          <AccordionContent className="p-4 bg-muted/20 rounded-b-md border border-t-0 border-border/30 max-h-96 overflow-auto">
-             <ScrollArea className="h-full">
+          <AccordionContent className="p-4 bg-muted/20 rounded-b-md border border-t-0 border-border/30">
+             <ScrollArea className="max-h-96"> {/* Added max-h for scrollability */}
                 <pre className="text-xs font-code text-foreground/80 whitespace-pre-wrap break-all">
                 {JSON.stringify(rawResponse || results, null, 2)}
                 </pre>
@@ -130,3 +134,5 @@ export default function VisualMatchesDisplay({ results }: VisualMatchesDisplayPr
     </div>
   );
 }
+
+    

@@ -4,38 +4,34 @@
 import { useState } from 'react';
 import ImageInputForm from '@/components/app/image-input-form';
 import VisualMatchesDisplay from '@/components/app/visual-matches-display';
-import type { VisualMatchesOutput } from '@/ai/flows/visual-matches-flow';
-import { searchVisualMatchesAction } from '@/app/actions';
+import type { DirectImageSearchOutput } from '@/ai/flows/direct-image-search-flow'; // Updated type
+import { searchWithDirectImageUploadAction } from '@/app/actions'; // Updated action
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Image as ImageIcon, Search, Terminal, Loader2, Info, UploadCloud, Link as LinkIcon } from "lucide-react";
+import { ImageUp, Search, Terminal, Loader2, Info, AlertCircle } from "lucide-react"; // Changed ImageIcon to ImageUp
 import { useToast } from "@/hooks/use-toast";
 
 export default function ImageSearchPage() {
-  const [results, setResults] = useState<VisualMatchesOutput | null>(null);
+  const [results, setResults] = useState<DirectImageSearchOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
-  const [publicImageUrl, setPublicImageUrl] = useState<string>('');
+  const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleImageReady = (dataUri: string | null) => {
-    setUploadedImagePreview(dataUri);
-    // Clear previous results when a new image is uploaded/captured
-    setResults(null);
+    setImageDataUri(dataUri);
+    setResults(null); // Clear previous results when a new image is selected
     setError(null);
-    setPublicImageUrl(''); // Reset public URL input
   };
 
-  const handleSearchWithPublicUrl = async () => {
-    if (!publicImageUrl || !publicImageUrl.startsWith('http')) {
-      setError("Please enter a valid, publicly accessible image URL (http:// or https://).");
+  const handleSearchWithImage = async () => {
+    if (!imageDataUri) {
+      setError("Please select or capture an image first.");
       toast({
         variant: "destructive",
-        title: "Invalid URL",
-        description: "A valid public image URL is required for the search.",
+        title: "No Image Provided",
+        description: "An image is required to perform the search.",
       });
       return;
     }
@@ -45,8 +41,7 @@ export default function ImageSearchPage() {
     setError(null);
 
     try {
-      // For this API, language and country are part of the flow defaults or can be fixed.
-      const response = await searchVisualMatchesAction(publicImageUrl, undefined, 'bd'); // Default country 'bd'
+      const response = await searchWithDirectImageUploadAction(imageDataUri);
       if (!response.success) {
         const errorMessage = response.error || response.message || "Image search API request failed.";
         setError(errorMessage);
@@ -61,7 +56,7 @@ export default function ImageSearchPage() {
         if (!response.matches || response.matches.length === 0) {
           toast({
             title: "No Matches Found",
-            description: response.message || `No visual matches found for the provided image URL.`,
+            description: response.message || `No visual matches found for the provided image.`,
           });
         } else {
           toast({
@@ -87,96 +82,66 @@ export default function ImageSearchPage() {
   return (
     <div className="min-h-full flex flex-col items-center py-8 px-4">
       <header className="mb-10 sm:mb-12 text-center">
-        <ImageIcon className="mx-auto h-16 w-16 text-primary mb-4" />
+        <ImageUp className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Reverse Image Search</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          Provide an image, then search for visual matches online using its public URL.
+          Upload or capture an image to find visual matches online.
         </p>
-        <p className="text-xs text-muted-foreground/70 mt-2 font-code">
-          Uses Real-Time Lens Data API. Ensure RAPIDAPI_KEY and RAPIDAPI_LENS_HOST are configured.
+         <p className="text-xs text-muted-foreground/70 mt-2 font-code">
+          Ensure RAPIDAPI_KEY, RAPIDAPI_DIRECT_IMAGE_UPLOAD_HOST, and RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH are configured.
         </p>
       </header>
 
-      <main className="w-full max-w-3xl space-y-12">
+      <main className="w-full max-w-2xl space-y-12"> {/* Changed max-w-3xl to max-w-2xl */}
         <Card className="shadow-lg border-border/30">
           <CardHeader>
             <CardTitle className="font-headline text-xl text-primary flex items-center">
-                <UploadCloud className="w-6 h-6 mr-2"/>
-                Step 1: Get Your Image
+                <ImageUp className="w-6 h-6 mr-2"/>
+                Step 1: Provide Your Image
             </CardTitle>
             <CardDescription className="font-code text-sm">
-                Upload an image from your device, capture one with your webcam, or note the URL of an existing online image.
+                Upload an image from your device or capture one with your webcam.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <ImageInputForm onImageReady={handleImageReady} isLoading={isLoading} />
+            
+            {imageDataUri && (
+                <Button
+                    onClick={handleSearchWithImage}
+                    disabled={isLoading || !imageDataUri}
+                    className="w-full h-12 text-lg bg-primary hover:bg-primary/90 text-primary-foreground font-code mt-4"
+                >
+                    {isLoading ? (
+                    <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        SEARCHING...
+                    </>
+                    ) : (
+                    <>
+                        <Search className="mr-2 h-5 w-5" />
+                        [Search with Image]
+                    </>
+                    )}
+                </Button>
+            )}
+             <Alert variant="default" className="bg-muted/30 border-primary/20 mt-4">
+                <AlertCircle className="h-5 w-5 text-primary" />
+                <AlertTitle className="font-semibold text-primary">API Configuration Note</AlertTitle>
+                <AlertDescription className="text-xs">
+                    This tool uses a RapidAPI service that accepts direct image uploads. Ensure `RAPIDAPI_KEY`, `RAPIDAPI_DIRECT_IMAGE_UPLOAD_HOST`, and `RAPIDAPI_DIRECT_IMAGE_UPLOAD_ENDPOINT_PATH` are correctly set in your .env file.
+                    The backend flow (`direct-image-search-flow.ts`) might need adjustments to the `FormData` field name (default: `image_file`) and response parsing based on your chosen API.
+                </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
         
-        {(uploadedImagePreview || !uploadedImagePreview) && ( // Show Step 2 always or if image is previewed
-          <Card className="shadow-lg border-border/30">
-            <CardHeader>
-                 <CardTitle className="font-headline text-xl text-primary flex items-center">
-                    <LinkIcon className="w-6 h-6 mr-2"/>
-                    Step 2: Provide Public Image URL & Search
-                </CardTitle>
-                 <CardDescription className="font-code text-sm">
-                    This API requires a publicly accessible URL for the image. 
-                    If you uploaded/captured an image in Step 1, you'll need to host it publicly first.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <Alert variant="default" className="bg-muted/30 border-primary/20">
-                    <Info className="h-5 w-5 text-primary" />
-                    <AlertTitle className="font-semibold text-primary">Manual Hosting Step Required for Uploaded/Captured Images</AlertTitle>
-                    <AlertDescription className="text-xs">
-                        If you used Step 1 to upload or capture an image, you must now upload that image (shown in the preview) to a public image hosting service.
-                        This could be your own cloud storage (like Google Drive, ensuring the file is shared publicly with "anyone with the link can view" permissions) or services like Imgur, PostImage, etc.
-                        Once uploaded, copy the **direct link** to the image (usually ending in .jpg, .png) and paste it into the URL field below.
-                        <br/>
-                        Direct integration for automatic temporary hosting is a complex feature planned for a later version.
-                    </AlertDescription>
-                </Alert>
-
-              <div className="space-y-2">
-                <label htmlFor="publicImageUrl" className="font-code text-sm text-muted-foreground">Public Image URL</label>
-                <Input
-                  id="publicImageUrl"
-                  type="url"
-                  placeholder="https://your-public-image-url.jpg"
-                  value={publicImageUrl}
-                  onChange={(e) => setPublicImageUrl(e.target.value)}
-                  disabled={isLoading}
-                  className="font-code bg-input/50 focus:bg-input border-border focus:border-primary h-11"
-                />
-              </div>
-              <Button
-                onClick={handleSearchWithPublicUrl}
-                disabled={isLoading || !publicImageUrl}
-                className="w-full h-12 text-lg bg-primary hover:bg-primary/90 text-primary-foreground font-code"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    SEARCHING...
-                  </>
-                ) : (
-                  <>
-                    <Search className="mr-2 h-5 w-5" />
-                    [Search with Image URL]
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         {isLoading && !results && (
           <div className="mt-8 text-center py-10 bg-card/50 rounded-lg shadow-md border border-primary/30">
             <div role="status" className="flex flex-col items-center space-y-4">
               <Loader2 className="w-12 h-12 text-primary animate-spin" />
               <p className="text-lg text-primary font-code font-medium">
-                [ANALYZING_IMAGE_VIA_LENS_API...]
+                [ANALYZING_UPLOADED_IMAGE...]
               </p>
               <p className="text-sm text-muted-foreground font-code">Please wait, this may take a moment.</p>
             </div>
@@ -193,8 +158,11 @@ export default function ImageSearchPage() {
           </Alert>
         )}
 
-        {results && !isLoading && <VisualMatchesDisplay results={results} />}
+        {/* Ensure VisualMatchesDisplay expects DirectImageSearchOutput or similar structure */}
+        {results && !isLoading && <VisualMatchesDisplay results={results} />} 
       </main>
     </div>
   );
 }
+
+    
