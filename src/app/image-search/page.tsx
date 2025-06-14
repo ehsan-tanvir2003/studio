@@ -10,7 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Image as ImageIcon Lucide, Search, Terminal, Loader2, Info, UploadCloud, LinkIcon } from "lucide-react";
+import { Image as ImageIcon, Search, Terminal, Loader2, Info, UploadCloud, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ImageSearchPage() {
@@ -87,7 +87,7 @@ export default function ImageSearchPage() {
   return (
     <div className="min-h-full flex flex-col items-center py-8 px-4">
       <header className="mb-10 sm:mb-12 text-center">
-        <ImageIconLucide className="mx-auto h-16 w-16 text-primary mb-4" />
+        <ImageIcon className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Reverse Image Search</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
           Upload or capture an image, then search for visual matches online.
