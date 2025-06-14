@@ -31,6 +31,15 @@ export default function ImageInputForm({ onImageReady, isLoading }: ImageInputFo
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
+  const stopCamera = useCallback(() => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCapturing(false);
+  }, [videoRef, setIsCapturing]);
+
   const resetState = useCallback(() => {
     setPreviewDataUri(null);
     setFileError(null);
@@ -39,14 +48,10 @@ export default function ImageInputForm({ onImageReady, isLoading }: ImageInputFo
     if (fileInputRef.current) {
       fileInputRef.current.value = ""; // Reset file input
     }
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
+    stopCamera(); // Use the memoized stopCamera
     setIsCapturing(false);
     setMode('idle');
-  }, [onImageReady]);
+  }, [onImageReady, stopCamera]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -82,31 +87,32 @@ export default function ImageInputForm({ onImageReady, isLoading }: ImageInputFo
         setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play(); // Ensure video plays
+          // videoRef.current.play() is handled by the useEffect below and autoPlay on the tag
         }
         setIsCapturing(true);
       } catch (err) {
         console.error("Error accessing camera:", err);
         setHasCameraPermission(false);
         const error = err as Error;
+        let specificErrorMsg = `Error accessing camera: ${error.message}. Try refreshing or check browser permissions.`;
         if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-            setCameraError("Camera permission denied. Please enable camera access in your browser settings.");
+            specificErrorMsg = "Camera permission denied. Please enable camera access in your browser settings.";
         } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError"){
-            setCameraError("No camera found. Please ensure a camera is connected and enabled.");
-        } else {
-            setCameraError(`Error accessing camera: ${error.message}. Try refreshing or check browser permissions.`);
+            specificErrorMsg = "No camera found. Please ensure a camera is connected and enabled.";
         }
+        setCameraError(specificErrorMsg);
         toast({
           variant: "destructive",
           title: "Camera Access Issue",
-          description: cameraError || "Could not access the camera.",
+          description: specificErrorMsg,
         });
         setIsCapturing(false);
         setMode('idle');
       }
     } else {
-      setCameraError("Camera access not supported by this browser.");
-      toast({ variant: "destructive", title: "Unsupported Browser", description: "Camera access is not supported." });
+      const unsupportedMsg = "Camera access not supported by this browser.";
+      setCameraError(unsupportedMsg);
+      toast({ variant: "destructive", title: "Unsupported Browser", description: unsupportedMsg });
       setIsCapturing(false);
       setMode('idle');
     }
@@ -125,18 +131,9 @@ export default function ImageInputForm({ onImageReady, isLoading }: ImageInputFo
         setPreviewDataUri(dataUri);
         onImageReady(dataUri);
         stopCamera();
-        setMode('idle'); // Or a 'preview' mode if you want specific UI after capture
+        setMode('idle'); 
       }
     }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setIsCapturing(false);
   };
   
   useEffect(() => {
@@ -144,7 +141,19 @@ export default function ImageInputForm({ onImageReady, isLoading }: ImageInputFo
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [stopCamera]);
+
+  // Effect to handle video play when isCapturing becomes true and videoRef is available
+  useEffect(() => {
+    if (isCapturing && videoRef.current) {
+      videoRef.current.setAttribute('autoplay', '');
+      videoRef.current.setAttribute('muted', '');
+      videoRef.current.setAttribute('playsinline', '');
+      videoRef.current.play().catch(err => {
+          console.warn("Video play interrupted or failed:", err);
+      });
+    }
+  }, [isCapturing]);
 
 
   if (isLoading) {
@@ -241,15 +250,3 @@ export default function ImageInputForm({ onImageReady, isLoading }: ImageInputFo
     </div>
   );
 }
-
-// Helper to ensure video plays on all devices
-useEffect(() => {
-    if (videoRef.current && isCapturing) {
-        videoRef.current.setAttribute('autoplay', '');
-        videoRef.current.setAttribute('muted', '');
-        videoRef.current.setAttribute('playsinline', '');
-        videoRef.current.play().catch(err => {
-            console.warn("Video play interrupted or failed:", err)
-        });
-    }
-}, [isCapturing]);
