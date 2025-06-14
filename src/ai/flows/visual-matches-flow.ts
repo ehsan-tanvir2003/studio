@@ -15,7 +15,7 @@ import { z } from 'genkit';
 const VisualMatchesInputSchema = z.object({
   imageUrl: z.string().url("A valid public HTTP/HTTPS URL for the image is required.").describe('The public URL of the image to search for.'),
   language: z.string().optional().default('en').describe('Language code for results (e.g., en, es).'),
-  country: z.string().optional().default('us').describe('Country code for region-specific results (e.g., us, gb).'),
+  country: z.string().optional().default('bd').describe('Country code for region-specific results (e.g., us, gb, bd).'),
 });
 export type VisualMatchesInput = z.infer<typeof VisualMatchesInputSchema>;
 
