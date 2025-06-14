@@ -46,7 +46,7 @@ export default function ImageSearchPage() {
 
     try {
       // For this API, language and country are part of the flow defaults or can be fixed.
-      const response = await searchVisualMatchesAction(publicImageUrl);
+      const response = await searchVisualMatchesAction(publicImageUrl, undefined, 'bd'); // Default country 'bd'
       if (!response.success) {
         const errorMessage = response.error || response.message || "Image search API request failed.";
         setError(errorMessage);
@@ -90,7 +90,7 @@ export default function ImageSearchPage() {
         <ImageIcon className="mx-auto h-16 w-16 text-primary mb-4" />
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Reverse Image Search</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          Upload or capture an image, then search for visual matches online.
+          Provide an image, then search for visual matches online using its public URL.
         </p>
         <p className="text-xs text-muted-foreground/70 mt-2 font-code">
           Uses Real-Time Lens Data API. Ensure RAPIDAPI_KEY and RAPIDAPI_LENS_HOST are configured.
@@ -102,10 +102,10 @@ export default function ImageSearchPage() {
           <CardHeader>
             <CardTitle className="font-headline text-xl text-primary flex items-center">
                 <UploadCloud className="w-6 h-6 mr-2"/>
-                Step 1: Provide an Image
+                Step 1: Get Your Image
             </CardTitle>
             <CardDescription className="font-code text-sm">
-                Upload an image from your device or capture one using your webcam.
+                Upload an image from your device, capture one with your webcam, or note the URL of an existing online image.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -113,24 +113,28 @@ export default function ImageSearchPage() {
           </CardContent>
         </Card>
         
-        {uploadedImagePreview && (
+        {(uploadedImagePreview || !uploadedImagePreview) && ( // Show Step 2 always or if image is previewed
           <Card className="shadow-lg border-border/30">
             <CardHeader>
                  <CardTitle className="font-headline text-xl text-primary flex items-center">
                     <LinkIcon className="w-6 h-6 mr-2"/>
-                    Step 2: Get a Public URL & Search
+                    Step 2: Provide Public Image URL & Search
                 </CardTitle>
                  <CardDescription className="font-code text-sm">
-                    This API requires a public URL. Upload the image above to a service like Imgur, then paste the direct image URL here.
+                    This API requires a publicly accessible URL for the image. 
+                    If you uploaded/captured an image in Step 1, you'll need to host it publicly first.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <Alert variant="default" className="bg-muted/30 border-primary/20">
                     <Info className="h-5 w-5 text-primary" />
-                    <AlertTitle className="font-semibold text-primary">Manual Step Required</AlertTitle>
+                    <AlertTitle className="font-semibold text-primary">Manual Hosting Step Required for Uploaded/Captured Images</AlertTitle>
                     <AlertDescription className="text-xs">
-                        To proceed, upload the image preview (shown in Step 1) to a public image hosting service (e.g., Imgur, PostImage). Then, copy the **direct link** to the image (usually ending in .jpg, .png, etc.) and paste it into the URL field below.
-                        Automatic temporary hosting with auto-deletion is a complex feature for a later version.
+                        If you used Step 1 to upload or capture an image, you must now upload that image (shown in the preview) to a public image hosting service.
+                        This could be your own cloud storage (like Google Drive, ensuring the file is shared publicly with "anyone with the link can view" permissions) or services like Imgur, PostImage, etc.
+                        Once uploaded, copy the **direct link** to the image (usually ending in .jpg, .png) and paste it into the URL field below.
+                        <br/>
+                        Direct integration for automatic temporary hosting is a complex feature planned for a later version.
                     </AlertDescription>
                 </Alert>
 
@@ -139,7 +143,7 @@ export default function ImageSearchPage() {
                 <Input
                   id="publicImageUrl"
                   type="url"
-                  placeholder="https://example.com/your-image.jpg"
+                  placeholder="https://your-public-image-url.jpg"
                   value={publicImageUrl}
                   onChange={(e) => setPublicImageUrl(e.target.value)}
                   disabled={isLoading}
