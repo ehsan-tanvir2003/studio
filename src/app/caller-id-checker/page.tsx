@@ -16,14 +16,14 @@ export default function CallerIdCheckerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSearch = async (phoneNumber: string) => {
+  const handleSearch = async (countryCode: string, nationalNumber: string) => {
     setIsLoading(true);
     setResults(null);
     setError(null);
 
     try {
-      const response = await searchCallerIdDetails(phoneNumber);
-      if (!response.success) { // This covers API errors or flow internal errors
+      const response = await searchCallerIdDetails(countryCode, nationalNumber);
+      if (!response.success) { 
         const errorMessage = response.error || response.message || "Caller ID API request failed or an error occurred in the process.";
         setError(errorMessage);
         setResults(null);
@@ -32,21 +32,21 @@ export default function CallerIdCheckerPage() {
           title: "Caller ID Error",
           description: errorMessage,
         });
-      } else { // response.success is true
+      } else { 
         setResults(response);
-        if(!response.data) { // API call was successful, but no specific caller data found
+        if(!response.data) { 
             toast({
                 title: "No Information Found",
-                description: response.message || `No details found for ${phoneNumber}.`,
+                description: response.message || `No details found for ${countryCode}${nationalNumber}.`,
             });
-        } else { // Data found and mapped
+        } else { 
              toast({
                 title: "Search Complete",
-                description: response.message || `Details retrieved for ${phoneNumber}.`,
+                description: response.message || `Details retrieved for ${countryCode}${nationalNumber}.`,
             });
         }
       }
-    } catch (e) { // Catch exceptions from the action call itself
+    } catch (e) { 
       const errMessage = e instanceof Error ? e.message : "An unexpected error occurred during the search operation.";
       setError(errMessage);
       console.error("Caller ID Page Exception:",e);
@@ -67,7 +67,7 @@ export default function CallerIdCheckerPage() {
         <Smartphone className="mx-auto h-16 w-16 text-primary mb-4" /> 
         <h1 className="text-4xl sm:text-5xl font-headline font-bold text-primary">Caller ID Checker</h1>
         <p className="text-muted-foreground mt-2 text-md sm:text-lg font-code">
-          Enter a phone number to fetch available details using Eyecon API.
+          Enter country code and phone number to fetch details using Eyecon API.
         </p>
          <p className="text-xs text-muted-foreground/70 mt-2 font-code">
           Ensure RAPIDAPI_KEY and RAPIDAPI_EYECON_HOST are configured.

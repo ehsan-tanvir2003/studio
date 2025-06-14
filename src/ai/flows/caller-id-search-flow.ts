@@ -13,7 +13,8 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const CallerIdSearchInputSchema = z.object({
-  phoneNumber: z.string().min(7, "Phone number seems too short.").regex(/^[0-9]+$/, "Phone number should only contain digits.").describe('The phone number to search for, including country code without leading + or 00 (e.g., 1XXXXXXXXXX for US, 971501234567 for UAE).'),
+  countryCode: z.string().regex(/^[0-9]+$/, "Country code should only contain digits.").describe('The country code (e.g., 91 for India, 1 for US).'),
+  nationalNumber: z.string().min(5, "Phone number seems too short.").regex(/^[0-9]+$/, "Phone number should only contain digits.").describe('The national phone number without the country code.'),
 });
 export type CallerIdSearchInput = z.infer<typeof CallerIdSearchInputSchema>;
 
@@ -37,7 +38,6 @@ const CallerIdDataSchema = z.object({
   lastSeen: z.string().optional().nullable().describe("User's last seen status on relevant platforms."),
   email: z.string().email().optional().nullable().describe("Email address associated with the number."),
   otherPhones: z.array(z.string()).optional().nullable().describe("Other phone numbers associated with this contact."),
-  // Add other fields based on actual API response if needed
 });
 export type CallerIdData = z.infer<typeof CallerIdDataSchema>;
 
@@ -62,7 +62,7 @@ const callerIdSearchFlow = ai.defineFlow(
   },
   async (input) => {
     const rapidApiKey = process.env.RAPIDAPI_KEY;
-    const rapidApiHost = process.env.RAPIDAPI_EYECON_HOST; // Using specific host for Eyecon
+    const rapidApiHost = process.env.RAPIDAPI_EYECON_HOST;
     console.log('[Caller ID Flow] Invoked.');
 
     if (!rapidApiKey || rapidApiKey.trim() === "") {
@@ -83,8 +83,8 @@ const callerIdSearchFlow = ai.defineFlow(
     }
     console.log(`[Caller ID Flow] Using Key (starts with: ${rapidApiKey.substring(0, Math.min(5, rapidApiKey.length))}) and Host: ${rapidApiHost}`);
 
-    const { phoneNumber } = input;
-    const apiEndpointUrl = `https://${rapidApiHost}/?phone=${encodeURIComponent(phoneNumber)}`;
+    const { countryCode, nationalNumber } = input;
+    const apiEndpointUrl = `https://${rapidApiHost}/api/v1/search?code=${encodeURIComponent(countryCode)}&number=${encodeURIComponent(nationalNumber)}`;
     console.log(`[Caller ID Flow] Target Endpoint URL: ${apiEndpointUrl}`);
 
     try {
@@ -102,7 +102,6 @@ const callerIdSearchFlow = ai.defineFlow(
       let responseData: any;
       try {
         responseData = JSON.parse(responseText);
-        // Log the parsed JSON response
         console.log('[Caller ID Flow] Parsed API JSON response (first 1000 chars):', responseText.substring(0, 1000));
       } catch (jsonError) {
         console.error(`[Caller ID Flow] Could not parse API response as JSON. Status: ${response.status}. Raw response (first 500 chars): ${responseText.substring(0, 500)}`);
@@ -130,7 +129,6 @@ const callerIdSearchFlow = ai.defineFlow(
         };
       }
       
-      // Attempt to extract the main data object from the response
       let callerData = responseData; 
       if (responseData && responseData.data && typeof responseData.data === 'object') {
         callerData = responseData.data;
@@ -139,30 +137,24 @@ const callerIdSearchFlow = ai.defineFlow(
       } else if (Array.isArray(responseData) && responseData.length > 0 && typeof responseData[0] === 'object'){ 
         callerData = responseData[0];
       }
-      // Log the extracted callerData object before mapping
       console.log('[Caller ID Flow] Extracted callerData for mapping (first 1000 chars):', JSON.stringify(callerData).substring(0,1000));
 
-
-      // Check if the extracted callerData is minimal or indicates "not found"
-      // This check is important if the API returns 200 OK but with an empty object or a specific "not found" message.
       const isEffectivelyEmpty = !callerData || Object.keys(callerData).length === 0;
       const hasNotFoundMessage = responseData.message?.toLowerCase().includes("not found") || 
                                  responseData.message?.toLowerCase().includes("no user") ||
                                  responseData.reason?.toLowerCase().includes("not found");
 
       if (isEffectivelyEmpty || hasNotFoundMessage) {
-        const friendlyMessage = responseData.message || `No caller ID information found for ${phoneNumber}.`;
+        const friendlyMessage = responseData.message || `No caller ID information found for ${countryCode}${nationalNumber}.`;
         console.log(`[Caller ID Flow] No meaningful data found or "not found" message received. Message: ${friendlyMessage}`);
         return {
-          success: true, // API call was successful, but no data found
+          success: true, 
           data: null,
           message: friendlyMessage,
           rawResponse: responseData,
         };
       }
 
-      // Map the API response to our CallerIdDataSchema.
-      // This is a best-guess mapping and might need adjustment based on actual API response.
       const mappedData: CallerIdData = {
         name: callerData.name || (callerData.contact && callerData.contact.name) || null,
         photo: callerData.photo || (callerData.contact && callerData.contact.photo) || (callerData.image_url) || null,
@@ -175,7 +167,7 @@ const callerIdSearchFlow = ai.defineFlow(
             name: sm.name,
             photo: sm.photo
         })) : (callerData.socials ? Object.entries(callerData.socials).map(([key, value]: [string, any]) => ({ type: key, id: value.id || value.url, name: value.name, photo: value.photo })) : []),
-        isSpam: callerData.isSpam || (callerData.spam_score && callerData.spam_score > 50) || null, // Example spam logic
+        isSpam: callerData.isSpam || (callerData.spam_score && callerData.spam_score > 50) || null,
         tags: Array.isArray(callerData.tags) ? callerData.tags : [],
         lastSeen: callerData.last_seen || callerData.lastSeen,
         email: callerData.email,

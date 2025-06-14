@@ -86,13 +86,15 @@ export async function locateCellTower(
 
 // --- Caller ID Search (using Eyecon RapidAPI) ---
 const callerIdSearchActionSchema = z.object({
-  phoneNumber: z.string().min(7, "Phone number seems too short.").regex(/^[0-9]+$/, "Phone number should only contain digits."),
+  countryCode: z.string().regex(/^[0-9]+$/, "Country code should only contain digits."),
+  nationalNumber: z.string().min(5, "Phone number seems too short.").regex(/^[0-9]+$/, "Phone number should only contain digits."),
 });
 
 export async function searchCallerIdDetails(
-  phoneNumber: string
+  countryCode: string,
+  nationalNumber: string
 ): Promise<CallerIdSearchOutput> {
-  const validationResult = callerIdSearchActionSchema.safeParse({ phoneNumber });
+  const validationResult = callerIdSearchActionSchema.safeParse({ countryCode, nationalNumber });
   if (!validationResult.success) {
     return {
       success: false,
@@ -102,7 +104,8 @@ export async function searchCallerIdDetails(
   }
 
   const flowInput: CallerIdSearchInput = { 
-    phoneNumber: validationResult.data.phoneNumber,
+    countryCode: validationResult.data.countryCode,
+    nationalNumber: validationResult.data.nationalNumber,
   };
 
   try {
