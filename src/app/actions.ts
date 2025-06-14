@@ -5,6 +5,7 @@
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
 import { searchCallerId, type CallerIdSearchInput, type CallerIdSearchOutput } from '@/ai/flows/caller-id-search-flow';
+import { searchVisualMatchesWithUrl, type VisualMatchesInput, type VisualMatchesOutput } from '@/ai/flows/visual-matches-flow';
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -116,6 +117,46 @@ export async function searchCallerIdDetails(
     let errorMessage = "An unexpected error occurred during Caller ID search.";
     if (error instanceof Error) {
       errorMessage = `Caller ID search failed: ${error.message}`;
+    }
+    return { success: false, error: errorMessage, message: errorMessage };
+  }
+}
+
+// --- Visual Matches Image Search (using Real-Time Lens Data RapidAPI) ---
+const visualMatchesSearchActionSchema = z.object({
+  imageUrl: z.string().url("A valid public HTTP/HTTPS URL for the image is required."),
+  language: z.string().optional(),
+  country: z.string().optional(),
+});
+
+export async function searchVisualMatchesAction(
+  imageUrl: string,
+  language?: string,
+  country?: string
+): Promise<VisualMatchesOutput> {
+  const validationResult = visualMatchesSearchActionSchema.safeParse({ imageUrl, language, country });
+  if (!validationResult.success) {
+    return {
+      success: false,
+      error: validationResult.error.errors.map(e => e.message).join(', '),
+      message: validationResult.error.errors.map(e => e.message).join(', '),
+    };
+  }
+
+  const flowInput: VisualMatchesInput = { 
+    imageUrl: validationResult.data.imageUrl,
+    language: validationResult.data.language,
+    country: validationResult.data.country,
+  };
+
+  try {
+    const result = await searchVisualMatchesWithUrl(flowInput);
+    return result;
+  } catch (error) {
+    console.error("Error in searchVisualMatchesWithUrl flow:", error);
+    let errorMessage = "An unexpected error occurred during visual matches search.";
+    if (error instanceof Error) {
+      errorMessage = `Visual matches search failed: ${error.message}`;
     }
     return { success: false, error: errorMessage, message: errorMessage };
   }

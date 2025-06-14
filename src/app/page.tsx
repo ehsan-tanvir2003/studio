@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, RadioTower, Binary, Smartphone } from 'lucide-react'; 
+import { ArrowRight, RadioTower, Binary, Smartphone, Image as ImageIconLucide } from 'lucide-react'; 
 import * as React from 'react'; 
 
 export default function HubPage() {
@@ -24,14 +24,14 @@ export default function HubPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
         <Link href="/caller-id-checker" passHref>
           <Card className="bg-card/80 hover:bg-card/100 border-purple-500/30 hover:border-purple-500/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-purple-500/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
             <CardHeader className="flex-grow">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-2xl sm:text-3xl font-headline text-purple-500 flex items-center">
                   <Smartphone className="mr-3 h-7 w-7 sm:h-8 sm:w-8" />
-                  Caller ID Checker
+                  Caller ID
                 </CardTitle>
                 <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-purple-500" />
               </div>
@@ -61,6 +61,26 @@ export default function HubPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-primary font-code">Locate Tower &gt;</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/image-search" passHref>
+          <Card className="bg-card/80 hover:bg-card/100 border-blue-500/30 hover:border-blue-500/70 transition-all duration-300 ease-in-out shadow-lg hover:shadow-blue-500/30 transform hover:scale-105 cursor-pointer flex flex-col h-full">
+            <CardHeader className="flex-grow">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl sm:text-3xl font-headline text-blue-500 flex items-center">
+                  <ImageIconLucide className="mr-3 h-7 w-7 sm:h-8 sm:w-8" />
+                  Image Search
+                </CardTitle>
+                <ArrowRight className="h-6 w-6 sm:h-7 sm:w-7 text-blue-500" />
+              </div>
+              <CardDescription className="font-code text-muted-foreground pt-2 text-sm sm:text-base">
+                Search for visually similar items or products using an image URL via Real-Time Lens Data API.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-primary font-code">Search Images &gt;</p>
             </CardContent>
           </Card>
         </Link>

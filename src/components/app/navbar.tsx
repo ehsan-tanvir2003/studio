@@ -3,13 +3,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Smartphone } from 'lucide-react'; 
+import { Home, RadioTower, Binary, Smartphone, Image as ImageIconLucide } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
   { href: '/caller-id-checker', label: 'Caller ID', icon: Smartphone },
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
+  { href: '/image-search', label: 'Image Search', icon: ImageIconLucide },
 ];
 
 export default function Navbar() {
@@ -23,7 +24,7 @@ export default function Navbar() {
             <Binary className="h-7 w-7" />
             <span className="font-headline text-2xl font-bold">IntelSuite</span>
           </Link>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 sm:space-x-0.5"> {/* Adjusted spacing for more items */}
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
@@ -31,7 +32,7 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center px-2 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-150 ease-in-out", 
+                    "flex items-center px-1.5 py-2 sm:px-2 rounded-md text-xs font-medium transition-colors duration-150 ease-in-out", 
                     "font-code",
                     isActive
                       ? "bg-primary/10 text-primary"
