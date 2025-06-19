@@ -5,7 +5,8 @@
 import { searchPdlPersonProfiles, type PdlPersonSearchOutput, type PdlPersonSearchInput } from '@/ai/flows/pdl-person-search-flow';
 import { fetchCellTowerLocationFromUnwiredLabs, type CellTowerLocation } from '@/services/unwiredlabs';
 import { searchCallerId, type CallerIdSearchInput, type CallerIdSearchOutput } from '@/ai/flows/caller-id-search-flow';
-import { searchWithImageData, type DirectImageSearchInput, type DirectImageSearchOutput } from '@/ai/flows/direct-image-search-flow'; // Updated import
+import { searchWithImageData, type DirectImageSearchInput, type DirectImageSearchOutput } from '@/ai/flows/direct-image-search-flow';
+import { searchBusinesses, type BusinessSearchInput, type BusinessSearchOutput } from '@/ai/flows/business-search-flow'; // New import
 import * as z from 'zod';
 
 // --- PeopleDataLabs Person Search ---
@@ -158,4 +159,38 @@ export async function searchWithDirectImageUploadAction(
   }
 }
 
-    
+// --- Business Search (Mock Data) ---
+const businessSearchActionSchema = z.object({
+  searchTerm: z.string().min(1, "Search term cannot be empty.").max(100, "Search term is too long."),
+});
+
+export async function searchBusinessesAction(
+  searchTerm: string
+): Promise<BusinessSearchOutput> {
+  const validationResult = businessSearchActionSchema.safeParse({ searchTerm });
+  if (!validationResult.success) {
+    const errorMessage = validationResult.error.errors.map(e => e.message).join(', ');
+    return {
+      matches: [],
+      error: errorMessage,
+      message: errorMessage,
+    };
+  }
+
+  const flowInput: BusinessSearchInput = { 
+    searchTerm: validationResult.data.searchTerm,
+  };
+
+  try {
+    // This calls the mock search flow
+    const result = await searchBusinesses(flowInput);
+    return result;
+  } catch (error) {
+    console.error("Error in searchBusinesses flow:", error);
+    let errorMessage = "An unexpected error occurred during business search.";
+    if (error instanceof Error) {
+      errorMessage = `Business search failed: ${error.message}`;
+    }
+    return { matches: [], error: errorMessage, message: errorMessage };
+  }
+}

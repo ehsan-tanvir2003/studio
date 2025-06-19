@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Smartphone, Image as ImageIconLucide } from 'lucide-react'; 
+import { Home, RadioTower, Binary, Smartphone, Image as ImageIconLucide, Briefcase } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/caller-id-checker', label: 'Caller ID', icon: Smartphone },
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
   { href: '/image-search', label: 'Image Search', icon: ImageIconLucide },
+  { href: '/business-search', label: 'Business Search', icon: Briefcase },
 ];
 
 export default function Navbar() {
