@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A mock business search AI flow.
+ * @fileOverview A business search AI flow.
  *
  * - searchBusinesses - A function that simulates searching business data.
  * - BusinessSearchInput - The input type for the searchBusinesses function.
@@ -28,63 +28,35 @@ const BusinessInfoSchema = z.object({
     email: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
   }).optional().nullable().describe("Contact information for the business."),
-  // Add other fields that might be extracted from documents, e.g.,
-  // servicesOffered: z.array(z.string()).optional(),
-  // yearFounded: z.number().optional(),
+  // Additional fields that might be extracted from documents:
+  sourceDocument: z.string().optional().describe("Name or ID of the document this info came from."),
+  extractedTextSnippets: z.array(z.string()).optional().describe("Relevant text snippets from the document."),
 });
 export type BusinessInfo = z.infer<typeof BusinessInfoSchema>;
 
 const BusinessSearchOutputSchema = z.object({
-  matches: z.array(BusinessInfoSchema).describe('Array of matching business information from the mock dataset.'),
+  matches: z.array(BusinessInfoSchema).describe('Array of matching business information from the indexed document data.'),
   message: z.string().optional().describe('A message about the search operation.'),
   error: z.string().optional().describe('Error message if the search failed.'),
 });
 export type BusinessSearchOutput = z.infer<typeof BusinessSearchOutputSchema>;
 
-// Mock Dataset - In a real application, this would come from an indexed database
-// of processed document content.
-const mockBusinessData: BusinessInfo[] = [
-  {
-    id: 'biz001',
-    name: 'Innovatech Solutions Ltd.',
-    category: 'Technology & Software Development',
-    summary: 'Provides cutting-edge software solutions, cloud computing services, and AI-driven analytics for various industries. Specializes in custom enterprise applications.',
-    keywords: ['software', 'cloud', 'ai', 'analytics', 'enterprise', 'tech solutions', 'innovation'],
-    contact: { phone: '555-0101', email: 'contact@innovatech.com', address: '123 Tech Park, Silicon Valley, CA' }
-  },
-  {
-    id: 'biz002',
-    name: 'GreenLeaf Organics',
-    category: 'Retail - Food & Beverage',
-    summary: 'Offers a wide range of organic food products, fresh produce, and health supplements. Committed to sustainable farming and healthy living.',
-    keywords: ['organic', 'food', 'health', 'supplements', 'sustainable', 'farming', 'retail'],
-    contact: { phone: '555-0202', email: 'info@greenleaf.org', address: '45 Grove Lane, Wellness City, TX' }
-  },
-  {
-    id: 'biz003',
-    name: 'Precision Engineering Inc.',
-    category: 'Manufacturing & Industrial',
-    summary: 'Specializes in high-precision CNC machining, custom parts manufacturing, and industrial equipment repair. Serves aerospace and automotive sectors.',
-    keywords: ['engineering', 'cnc machining', 'manufacturing', 'industrial parts', 'aerospace', 'automotive'],
-    contact: { phone: '555-0303', email: 'sales@precisioneng.co', address: '789 Industrial Blvd, Motor City, MI' }
-  },
-  {
-    id: 'biz004',
-    name: 'Capital Advisors Group',
-    category: 'Financial Services & Consulting',
-    summary: 'Provides expert financial planning, investment management, and corporate advisory services. Helps clients achieve long-term financial goals.',
-    keywords: ['finance', 'investment', 'consulting', 'advisory', 'wealth management', 'financial planning'],
-    contact: { phone: '555-0404', email: 'desk@capitaladvisors.com', address: '1 Financial Plaza, New York, NY' }
-  },
-  {
-    id: 'biz005',
-    name: 'Global Logistics Solutions',
-    category: 'Logistics & Transportation',
-    summary: 'International freight forwarding, supply chain management, and warehousing solutions. Efficient and reliable shipping services worldwide.',
-    keywords: ['logistics', 'shipping', 'freight', 'supply chain', 'transport', 'warehousing', 'global'],
-    contact: { phone: '555-0505', email: 'ops@globallogistics.net', address: 'Port City Docks, Unit 5, CA' }
-  }
-];
+// In a real application, this array would be populated by querying a
+// persistent database (e.g., Firestore, PostgreSQL, Elasticsearch)
+// where data extracted from uploaded documents is stored and indexed.
+const allBusinessDataFromPersistentStore: BusinessInfo[] = [];
+// For demonstration, if you want to manually add data here for testing the search logic
+// while the backend is being developed, you can do so. Example:
+// allBusinessDataFromPersistentStore.push({
+//   id: 'doc001_bizA',
+//   name: 'Example Tech Inc from Uploaded Doc',
+//   category: 'Software Development',
+//   summary: 'This company was mentioned in document X and specializes in AI.',
+//   keywords: ['ai', 'software', 'documentX'],
+//   contact: { phone: '555-9999', email: 'test@exampletechdoc.com' },
+//   sourceDocument: 'DocumentX.pdf'
+// });
+
 
 export async function searchBusinesses(input: BusinessSearchInput): Promise<BusinessSearchOutput> {
   return businessSearchFlow(input);
@@ -101,12 +73,25 @@ const businessSearchFlow = ai.defineFlow(
     const searchTerm = input.searchTerm.toLowerCase().trim();
 
     if (!searchTerm) {
-      return { matches: [], message: 'Search term was empty. No results to display from mock data.' };
+      return { matches: [], message: 'Search term was empty. No results to display.' };
+    }
+
+    //
+    // THIS IS WHERE YOU WOULD INTEGRATE WITH YOUR REAL DATA SOURCE
+    // - Fetch data from your database/search index.
+    // - For now, it uses the 'allBusinessDataFromPersistentStore' array.
+    // - In a production system, this array would be dynamically populated.
+    //
+    if (allBusinessDataFromPersistentStore.length === 0) {
+      return { 
+        matches: [], 
+        message: 'No business data has been indexed yet. Upload documents to populate the search index. (Backend processing required).',
+      };
     }
 
     try {
-      // Simulate a search against the mock data
-      const results = mockBusinessData.filter(business => {
+      // Simulate a search against the (currently empty or manually populated) data store
+      const results = allBusinessDataFromPersistentStore.filter(business => {
         const searchableText = `
           ${business.name.toLowerCase()} 
           ${business.category.toLowerCase()} 
@@ -114,18 +99,20 @@ const businessSearchFlow = ai.defineFlow(
           ${business.keywords.join(' ').toLowerCase()}
           ${business.contact?.email?.toLowerCase() || ''}
           ${business.contact?.address?.toLowerCase() || ''}
+          ${business.sourceDocument?.toLowerCase() || ''}
+          ${(business.extractedTextSnippets || []).join(' ').toLowerCase()}
         `;
         return searchableText.includes(searchTerm);
       });
 
-      console.log(`[Business Search Flow] Found ${results.length} matches in mock data.`);
+      console.log(`[Business Search Flow] Found ${results.length} matches in the current data store.`);
       return {
         matches: results,
-        message: `Successfully searched mock data. Found ${results.length} item(s).`
+        message: `Successfully searched the current data store. Found ${results.length} item(s).`
       };
 
     } catch (error) {
-      console.error('[Business Search Flow] Error during mock search:', error);
+      console.error('[Business Search Flow] Error during search:', error);
       let errorMessage = 'An unexpected error occurred during the business search.';
       if (error instanceof Error) {
         errorMessage = `Business Search Exception: ${error.message}`;
@@ -134,3 +121,19 @@ const businessSearchFlow = ai.defineFlow(
     }
   }
 );
+
+// Placeholder function for where document processing would be triggered
+// This would typically be a separate backend service/Cloud Function.
+export async function processAndIndexDocument(fileData: any /* actual file data type */, fileName: string): Promise<{ success: boolean; message: string }> {
+  console.log(`[Business Search Flow] Received request to process document: ${fileName}`);
+  // 1. Store the file (e.g., Firebase Storage)
+  // 2. Extract content (PDF text, Excel data)
+  // 3. Structure the data (e.g., into BusinessInfo objects)
+  // 4. Index the data into your search database (e.g., Firestore, Elasticsearch)
+  //
+  // For now, this is a placeholder.
+  return {
+    success: false,
+    message: `Document processing and indexing for '${fileName}' is not yet implemented. This requires backend development. The file was not stored or indexed.`
+  };
+}
