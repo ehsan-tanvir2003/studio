@@ -138,10 +138,21 @@ export async function processAndIndexDocumentFromDrive(fileId: string, fileName:
   // 5. Store embeddings and metadata in a vector database.
   // 6. Store original file or reference in persistent storage if needed.
   
+  // This function would be called by a backend system whenever a new file is detected
+  // in the configured Google Drive folder, or when the folder ID is changed by an admin,
+  // triggering a re-indexing process.
+
+  // For example, if a new file "annual_report_2024.pdf" (ID: "abcdef12345") is added to Drive:
+  // await processAndIndexDocumentFromDrive("abcdef12345", "annual_report_2024.pdf");
+  // This would then populate `allBusinessDataFromPersistentStore` (or its real database equivalent)
+  // with searchable information extracted from "annual_report_2024.pdf".
+  
   return {
     success: false, // This is false because it's not implemented
-    message: `Document processing and indexing for '${fileName}' from Google Drive is a backend task not yet implemented. This function is a placeholder.`
+    message: `Document processing and indexing for '${fileName}' from Google Drive is a backend task not yet implemented. This function is a placeholder for the required complex backend logic.`
   };
 }
+
+    
 
     
