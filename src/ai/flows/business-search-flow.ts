@@ -2,6 +2,7 @@
 'use server';
 /**
  * @fileOverview A business search AI flow.
+ * (Conceptual: Designed to search data indexed from a Google Drive folder)
  *
  * - searchBusinesses - A function that simulates searching business data.
  * - BusinessSearchInput - The input type for the searchBusinesses function.
@@ -28,8 +29,7 @@ const BusinessInfoSchema = z.object({
     email: z.string().optional().nullable(),
     address: z.string().optional().nullable(),
   }).optional().nullable().describe("Contact information for the business."),
-  // Additional fields that might be extracted from documents:
-  sourceDocument: z.string().optional().describe("Name or ID of the document this info came from."),
+  sourceDocument: z.string().optional().describe("Name or ID of the Google Drive document this info came from."),
   extractedTextSnippets: z.array(z.string()).optional().describe("Relevant text snippets from the document."),
 });
 export type BusinessInfo = z.infer<typeof BusinessInfoSchema>;
@@ -42,20 +42,21 @@ const BusinessSearchOutputSchema = z.object({
 export type BusinessSearchOutput = z.infer<typeof BusinessSearchOutputSchema>;
 
 // In a real application, this array would be populated by querying a
-// persistent database (e.g., Firestore, PostgreSQL, Elasticsearch)
-// where data extracted from uploaded documents is stored and indexed.
-const allBusinessDataFromPersistentStore: BusinessInfo[] = [];
-// For demonstration, if you want to manually add data here for testing the search logic
-// while the backend is being developed, you can do so. Example:
-// allBusinessDataFromPersistentStore.push({
-//   id: 'doc001_bizA',
-//   name: 'Example Tech Inc from Uploaded Doc',
-//   category: 'Software Development',
-//   summary: 'This company was mentioned in document X and specializes in AI.',
-//   keywords: ['ai', 'software', 'documentX'],
-//   contact: { phone: '555-9999', email: 'test@exampletechdoc.com' },
-//   sourceDocument: 'DocumentX.pdf'
-// });
+// persistent database (e.g., Firestore, PostgreSQL, Elasticsearch, a Vector DB)
+// where data extracted from documents in a Google Drive folder is stored and indexed.
+// For "relevant" or "nearby" matches, this would typically involve semantic search over text embeddings.
+const allBusinessDataFromPersistentStore: BusinessInfo[] = []; 
+// Example of how data might look if it were indexed:
+// {
+//   id: 'gdrive_doc_001_bizA',
+//   name: 'Acme Innovations Ltd. (from GDrive)',
+//   category: 'Advanced Technology Solutions',
+//   summary: 'Acme Innovations specializes in AI-driven automation tools for enterprise clients, mentioned in project_proposal.pdf.',
+//   keywords: ['ai', 'automation', 'enterprise', 'saas'],
+//   contact: { phone: '555-0101', email: 'info@acmeinnovations.example.com' },
+//   sourceDocument: 'project_proposal.pdf (ID: xxxxxxxxxx)',
+//   extractedTextSnippets: ['... leveraging machine learning to optimize workflows...']
+// }
 
 
 export async function searchBusinesses(input: BusinessSearchInput): Promise<BusinessSearchOutput> {
@@ -76,21 +77,25 @@ const businessSearchFlow = ai.defineFlow(
       return { matches: [], message: 'Search term was empty. No results to display.' };
     }
 
+    // --- Backend Integration Point ---
+    // This is where the actual connection to Google Drive, file processing,
+    // embedding generation (e.g., with Gemini), indexing into a vector database,
+    // and semantic search query would happen.
     //
-    // THIS IS WHERE YOU WOULD INTEGRATE WITH YOUR REAL DATA SOURCE
-    // - Fetch data from your database/search index.
-    // - For now, it uses the 'allBusinessDataFromPersistentStore' array.
-    // - In a production system, this array would be dynamically populated.
-    //
+    // For this prototype, the `allBusinessDataFromPersistentStore` is empty.
+    // A full implementation requires significant backend development.
+    // --- End Backend Integration Point ---
+
     if (allBusinessDataFromPersistentStore.length === 0) {
       return { 
         matches: [], 
-        message: 'No business data has been indexed yet. Upload documents to populate the search index. (Backend processing required).',
+        message: 'No business data has been indexed yet. Configure Google Drive integration and ensure documents are processed by the backend system.',
       };
     }
 
     try {
-      // Simulate a search against the (currently empty or manually populated) data store
+      // Simulate a simple keyword search against the (currently empty or manually populated) data store
+      // A real AI-powered search would convert searchTerm to an embedding and query a vector DB.
       const results = allBusinessDataFromPersistentStore.filter(business => {
         const searchableText = `
           ${business.name.toLowerCase()} 
@@ -105,10 +110,10 @@ const businessSearchFlow = ai.defineFlow(
         return searchableText.includes(searchTerm);
       });
 
-      console.log(`[Business Search Flow] Found ${results.length} matches in the current data store.`);
+      console.log(`[Business Search Flow] Found ${results.length} matches in the current (mock/empty) data store.`);
       return {
         matches: results,
-        message: `Successfully searched the current data store. Found ${results.length} item(s).`
+        message: results.length > 0 ? `Successfully searched the current data store. Found ${results.length} item(s).` : `No matches found for "${searchTerm}" in the current data store.`
       };
 
     } catch (error) {
@@ -122,18 +127,21 @@ const businessSearchFlow = ai.defineFlow(
   }
 );
 
-// Placeholder function for where document processing would be triggered
-// This would typically be a separate backend service/Cloud Function.
-export async function processAndIndexDocument(fileData: any /* actual file data type */, fileName: string): Promise<{ success: boolean; message: string }> {
-  console.log(`[Business Search Flow] Received request to process document: ${fileName}`);
-  // 1. Store the file (e.g., Firebase Storage)
-  // 2. Extract content (PDF text, Excel data)
-  // 3. Structure the data (e.g., into BusinessInfo objects)
-  // 4. Index the data into your search database (e.g., Firestore, Elasticsearch)
-  //
-  // For now, this is a placeholder.
+// Conceptual function for where Google Drive document processing would be triggered.
+// This would be a complex backend service/Cloud Function.
+export async function processAndIndexDocumentFromDrive(fileId: string, fileName: string): Promise<{ success: boolean; message: string }> {
+  console.log(`[Business Search Flow] CONCEPTUAL: Received request to process document from Drive: ${fileName} (ID: ${fileId})`);
+  // 1. Authenticate with Google Drive API.
+  // 2. Download the file content using fileId.
+  // 3. Extract content (PDF text, Excel data, etc.).
+  // 4. Convert text to embeddings using Gemini or another model.
+  // 5. Store embeddings and metadata in a vector database.
+  // 6. Store original file or reference in persistent storage if needed.
+  
   return {
-    success: false,
-    message: `Document processing and indexing for '${fileName}' is not yet implemented. This requires backend development. The file was not stored or indexed.`
+    success: false, // This is false because it's not implemented
+    message: `Document processing and indexing for '${fileName}' from Google Drive is a backend task not yet implemented. This function is a placeholder.`
   };
 }
+
+    
