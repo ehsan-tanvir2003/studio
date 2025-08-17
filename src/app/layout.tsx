@@ -4,10 +4,9 @@
 import * as React from 'react';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import Navbar from '@/components/app/navbar'; 
+import Navbar from '@/components/app/navbar';
 import { Separator } from '@/components/ui/separator';
 import SplashScreen from '@/components/app/splash-screen';
-import CellLocatorPage from './cell-locator/page';
 
 export default function RootLayout({
   children,
@@ -24,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
@@ -36,7 +36,7 @@ export default function RootLayout({
           <div className="flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow container mx-auto px-4 py-8">
-              <CellLocatorPage />
+              {children}
             </main>
             <footer className="py-8 text-center text-muted-foreground text-xs sm:text-sm space-y-1">
               <p>&copy; {new Date().getFullYear()} Tower Locator. All rights reserved.</p>
