@@ -23,9 +23,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-        <meta name="theme-color" content="#220 10% 15%" />
-        <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png"></link>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
