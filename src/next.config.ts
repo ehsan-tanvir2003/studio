@@ -2,19 +2,27 @@
 import type {NextConfig} from 'next';
 import withPWA from 'next-pwa';
 
+// Define the PWA configuration separately
+const pwaConfig = {
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+};
+
+// Define the main Next.js configuration
 const nextConfig: NextConfig = {
-  output: 'standalone', // Added for optimized deployment
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**', // Allows all hostnames for https
+        hostname: '**',
         port: '',
         pathname: '/**',
       },
       {
         protocol: 'http',
-        hostname: '**', // Allows all hostnames for http
+        hostname: '**',
         port: '',
         pathname: '/**',
       },
@@ -22,9 +30,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-// PWA configuration is applied by wrapping the main Next.js config.
-export default withPWA({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-})(nextConfig);
+// To prevent a known type error with next-pwa, we destructre i18n out.
+const { i18n, ...nextConfigWithoutI18n } = nextConfig;
+
+// Wrap the modified config with the PWA plugin
+export default withPWA(pwaConfig)(nextConfigWithoutI18n);
