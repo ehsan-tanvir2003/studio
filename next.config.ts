@@ -1,13 +1,5 @@
 
 import type {NextConfig} from 'next';
-import withPWA from 'next-pwa';
-
-const pwaConfig = {
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  // The 'disable' property is removed to enable PWA in development mode
-};
 
 const nextConfig: NextConfig = {
   output: 'standalone', // Added for optimized deployment
@@ -29,4 +21,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(pwaConfig)(nextConfig);
+export default nextConfig;
