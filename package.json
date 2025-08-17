@@ -52,7 +52,6 @@
     "next-pwa": "^5.6.0",
     "patch-package": "^8.0.0",
     "react": "^18.3.1",
-    "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "recharts": "^2.15.1",
@@ -62,6 +61,7 @@
   },
   "devDependencies": {
     "@opentelemetry/exporter-jaeger": "^2.0.1",
+    "@types/next-pwa": "^5.6.9",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
