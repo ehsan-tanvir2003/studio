@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary } from 'lucide-react'; 
+import { RadioTower } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', label: 'Hub', icon: Home },
-  { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
+  { href: '/cell-locator', label: 'Locator', icon: RadioTower },
 ];
 
 export default function Navbar() {
@@ -17,9 +16,9 @@ export default function Navbar() {
     <nav className="bg-card/70 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors">
-            <Binary className="h-7 w-7" />
-            <span className="font-headline text-2xl font-bold">IntelSuite</span>
+          <Link href="/cell-locator" className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors">
+            <RadioTower className="h-7 w-7" />
+            <span className="font-headline text-2xl font-bold">TowerLocator</span>
           </Link>
           <div className="flex items-center space-x-1 sm:space-x-0.5">
             {navItems.map((item) => {
@@ -37,8 +36,8 @@ export default function Navbar() {
                   )}
                   title={item.label}
                 >
-                  <item.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", item.href === '/' ? 'sm:mr-0' : 'sm:mr-1')} /> 
-                  <span className={cn("hidden sm:inline", item.href === '/' ? 'sm:hidden': '')}>{item.label}</span>
+                  <item.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", 'sm:mr-1')} /> 
+                  <span className="hidden sm:inline">{item.label}</span>
                 </Link>
               );
             })}
