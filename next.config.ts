@@ -6,7 +6,7 @@ const pwaConfig = {
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
+  // The 'disable' property is removed to enable PWA in development mode
 };
 
 const nextConfig: NextConfig = {
