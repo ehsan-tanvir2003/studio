@@ -1,17 +1,13 @@
-
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, RadioTower, Binary, Smartphone, Image as ImageIconLucide, Briefcase } from 'lucide-react'; 
+import { Home, RadioTower, Binary } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Hub', icon: Home },
-  { href: '/caller-id-checker', label: 'Caller ID', icon: Smartphone },
   { href: '/cell-locator', label: 'Cell Locator', icon: RadioTower },
-  { href: '/image-search', label: 'Image Search', icon: ImageIconLucide },
-  { href: '/business-search', label: 'Business Search', icon: Briefcase },
 ];
 
 export default function Navbar() {
@@ -25,7 +21,7 @@ export default function Navbar() {
             <Binary className="h-7 w-7" />
             <span className="font-headline text-2xl font-bold">IntelSuite</span>
           </Link>
-          <div className="flex items-center space-x-1 sm:space-x-0.5"> {/* Adjusted spacing for more items */}
+          <div className="flex items-center space-x-1 sm:space-x-0.5">
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
