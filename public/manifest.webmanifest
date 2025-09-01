@@ -1,7 +1,7 @@
 {
   "name": "Tower Locator",
   "short_name": "TowerLocator",
-  "description": "Find approximate cell tower locations in Bangladesh using LAC, Cell ID, and operator MNC.",
+  "description": "An application to locate cell towers.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a202c",
