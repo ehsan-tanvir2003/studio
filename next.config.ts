@@ -10,7 +10,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  output: 'standalone', // Added for optimized deployment
+  output: 'export', // Changed for static export
   images: {
     remotePatterns: [
       {

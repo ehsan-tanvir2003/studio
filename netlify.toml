@@ -1,6 +1,6 @@
 [build]
-  command = "next build --no-lint"
-  publish = ".next"
+  command = "next build"
+  publish = "out"
 
 [build.environment]
   NODE_VERSION = "20"
