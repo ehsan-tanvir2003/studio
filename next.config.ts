@@ -12,6 +12,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   output: 'export', // Changed for static export
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
