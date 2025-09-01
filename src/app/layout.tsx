@@ -11,7 +11,7 @@ import SplashScreen from '@/components/app/splash-screen';
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.React.Node;
 }>) {
   const [loading, setLoading] = React.useState(true);
 
@@ -25,6 +25,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#1a202c" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
