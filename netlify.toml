@@ -1,0 +1,5 @@
+[build]
+  command = "next build --no-lint"
+
+[build.environment]
+  NODE_VERSION = "20"
