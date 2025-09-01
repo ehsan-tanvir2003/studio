@@ -11,7 +11,7 @@ import SplashScreen from '@/components/app/splash-screen';
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.React.Node;
+  children: React.ReactNode;
 }>) {
   const [loading, setLoading] = React.useState(true);
 
